@@ -51,7 +51,6 @@ def run_build(launch_app, build_type):
 
     # Build with NMake
     track_process(['ninja'])
-    track_process(['ninja'])
 
     # Copy any assets
     copy_assets()
