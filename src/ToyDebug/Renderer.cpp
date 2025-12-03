@@ -77,9 +77,6 @@ namespace Glue
 
 uint32_t CreateZBuffer(CD3DFramework* _this)
 {
-	// In DX9, depth/stencil buffers are created with the device or separately
-	// For compatibility, we'll create it as part of the device setup
-	// Store success for now - actual creation happens in CreateD3DDevice
 	return 0;
 }
 
@@ -127,7 +124,6 @@ uint32_t SelectD3DDeviceAndZFormat(CD3DFramework* _this, GUID* p_deviceGuid, uin
 {
 	std::println("SelectD3DDeviceAndZFormat! part 1");
 
-	// In DX9, we don't need to query device caps this way
 	// Just set some defaults for compatibility
 	_this->m_dwDeviceMemType = 0x4000; // Hardware
 
@@ -136,6 +132,20 @@ uint32_t SelectD3DDeviceAndZFormat(CD3DFramework* _this, GUID* p_deviceGuid, uin
 	_this->m_ddpfZBuffer.dwSize = 32;
 	_this->m_ddpfZBuffer.dwFlags = (p_flags & 8) != 0 ? 17408 : 1024;
 	_this->m_ddpfZBuffer.dwRGBBitCount = 16;
+
+	_this->m_ddDeviceDesc.dpcTriCaps.dwShadeCaps = 0x4000 // alpha blending supported
+	    | 0x8000                                          // alpha gouraud
+	    | 0x40                                            // color gouraud
+	    | 0x20;                                           // color flat
+
+	_this->m_ddDeviceDesc.dpcTriCaps.dwDestBlendCaps = 0x0002 // D3DBLEND_ONE
+	    | 0x0008                                              // D3DBLEND_INVSRCALPHA
+	    | 0x0040;                                             // SRCALPHA
+
+	_this->m_ddDeviceDesc.dpcTriCaps.dwSrcBlendCaps = 0x0001 | 0x0002 | 0x0020 | 0x0040;
+
+	_this->m_ddDeviceDesc.dwTextureOpCaps = 0x1 | 0x4;
+	_this->m_ddDeviceDesc.dpcTriCaps.dwTextureFilterCaps = 0x10;
 
 	_this->m_ddDeviceDesc.wMaxSimultaneousTextures = 1;
 
@@ -214,9 +224,6 @@ HRESULT CreateD3DDevice(CD3DFramework* _this, const CLSID* p_guid)
 
 int32_t CreateAndSetViewport(CD3DFramework* _this)
 {
-	// In DX9, viewport is set directly on device, not a separate object
-	// Store viewport data for compatibility
-
 	// Set DX9 viewport
 	D3DVIEWPORT9 vp;
 	vp.X = 0;
@@ -366,10 +373,7 @@ HRESULT __cdecl Hook_SetLightState(D3DLIGHTSTATETYPE p_lightState, DWORD p_value
 			// Use vertex colours in lighting
 			return device->SetRenderState(D3DRS_COLORVERTEX, p_value ? TRUE : FALSE);
 
-			// You can add other mappings here if the game ever uses them:
-			// case D3DLIGHTSTATE_MATERIAL:
-			// case D3DLIGHTSTATE_COLORMODE:
-			// etc
+		// TODO: Add other mappings if needed
 
 		default:
 			// Unknown or unused state - ignore safely
@@ -454,13 +458,13 @@ HRESULT __cdecl Hook_AddLight(void* p_light)
 	return hr;
 }
 
-HRESULT __cdecl Hook_DeleteLight(void* p_light) 
+HRESULT __cdecl Hook_DeleteLight(void* p_light)
 {
 	// TODO: Fix
 	return 0;
 }
 
-HRESULT __cdecl Hook_ReleaseLight(void* p_light) 
+HRESULT __cdecl Hook_ReleaseLight(void* p_light)
 {
 	// TODO: Fix
 	return 0;
@@ -554,81 +558,78 @@ void __cdecl Nu3D_CalculatePixelFormatShifts(Nu3DPixelFormatInfo* p_pixelFormatI
 void __cdecl Nu3D_CopyTextureToSurface(Nu3DBmpDataNode* p_bitmapDataNode)
 {
 	LPDIRECT3DTEXTURE9 pTexture = p_bitmapDataNode->d3dTexture;
-	if ( ! pTexture )
+	if ( ! pTexture || ! p_bitmapDataNode->texData )
 		return;
 
-	// Get texture description to determine format
-	D3DSURFACE_DESC surfaceDesc;
+	D3DSURFACE_DESC surfaceDesc{};
 	if ( FAILED(pTexture->GetLevelDesc(0, &surfaceDesc)) )
 		return;
 
-	// Lock the texture
-	D3DLOCKED_RECT lockedRect;
-	HRESULT hr = pTexture->LockRect(0, &lockedRect, nullptr, 0);
-
-	if ( FAILED(hr) )
-	{
-		// TODO: Error handling
+	D3DLOCKED_RECT lockedRect{};
+	if ( FAILED(pTexture->LockRect(0, &lockedRect, nullptr, 0)) )
 		return;
-	}
 
-	// Calculate pixel format shifts
-	Nu3DPixelFormatInfo pixelFormatInfo;
-	Nu3D_CalculatePixelFormatShifts(&pixelFormatInfo, surfaceDesc.Format);
+	const int texWidth = p_bitmapDataNode->textureWidth;
+	const int texHeight = p_bitmapDataNode->textureHeight;
 
-	int32_t texHeight = p_bitmapDataNode->textureHeight;
-	int32_t texWidth = p_bitmapDataNode->textureWidth;
+	const D3DFORMAT fmt = surfaceDesc.Format;
 
-	// Copy pixel data row by row
-	for ( int32_t currentRow = 0; currentRow < texHeight; ++currentRow )
+	for ( int y = 0; y < texHeight; ++y )
 	{
-		uint16_t* destPixel = (uint16_t*)((uint8_t*)lockedRect.pBits + currentRow * lockedRect.Pitch);
+		// D3D surfaces are top down, texData is bottom up in the original code
+		int srcY = texHeight - 1 - y;
 
-		// Source data is stored bottom-up, so flip it
-		uint32_t* sourcePixel = &p_bitmapDataNode->texData[texWidth * (texHeight - currentRow - 1)];
+		uint8_t* dstRow = (uint8_t*)lockedRect.pBits + y * lockedRect.Pitch;
 
-		for ( int32_t currentCol = 0; currentCol < texWidth; ++currentCol )
+		for ( int x = 0; x < texWidth; ++x )
 		{
-			// Extract RGBA components (assuming source is BGRA format with separate components)
-			uint32_t blue = sourcePixel[0];
-			uint32_t green = sourcePixel[1];
-			uint32_t red = sourcePixel[2];
-			uint32_t alpha = sourcePixel[3];
+			uint32_t argb = p_bitmapDataNode->texData[srcY * texWidth + x];
 
-			// Shift and mask each component
-			uint16_t pixelValue = 0;
+			// If this comes out with swapped channels, try treating it as BGRA instead.
+			uint8_t a = (uint8_t)((argb >> 24) & 0xFF);
+			uint8_t r = (uint8_t)((argb >> 16) & 0xFF);
+			uint8_t g = (uint8_t)((argb >> 8) & 0xFF);
+			uint8_t b = (uint8_t)(argb & 0xFF);
 
-			if ( pixelFormatInfo.greenShift < 0 )
-				pixelValue |= (green >> -pixelFormatInfo.greenShift) & pixelFormatInfo.greenMask;
-			else
-				pixelValue |= (green << pixelFormatInfo.greenShift) & pixelFormatInfo.greenMask;
-
-			if ( pixelFormatInfo.blueShift < 0 )
-				pixelValue |= (blue >> -pixelFormatInfo.blueShift) & pixelFormatInfo.blueMask;
-			else
-				pixelValue |= (blue << pixelFormatInfo.blueShift) & pixelFormatInfo.blueMask;
-
-			if ( pixelFormatInfo.redShift < 0 )
-				pixelValue |= (red >> -pixelFormatInfo.redShift) & pixelFormatInfo.redMask;
-			else
-				pixelValue |= (red << pixelFormatInfo.redShift) & pixelFormatInfo.redMask;
-
-			// Add alpha if texture has alpha channel
-			if ( (p_bitmapDataNode->flags & 0xF) != 0 )
+			if ( fmt == D3DFMT_A8R8G8B8 || fmt == D3DFMT_X8R8G8B8 )
 			{
-				if ( pixelFormatInfo.alphaShift < 0 )
-					pixelValue |= (alpha >> -pixelFormatInfo.alphaShift) & pixelFormatInfo.alphaMask;
-				else
-					pixelValue |= (alpha << pixelFormatInfo.alphaShift) & pixelFormatInfo.alphaMask;
-			}
+				uint32_t* dst32 = (uint32_t*)dstRow;
+				uint32_t pixel = ((uint32_t)a << 24) | ((uint32_t)r << 16) | ((uint32_t)g << 8) | ((uint32_t)b);
 
-			*destPixel++ = pixelValue;
-			++sourcePixel;
+				dst32[x] = pixel;
+			}
+			else if ( fmt == D3DFMT_A1R5G5B5 )
+			{
+				uint16_t* dst16 = (uint16_t*)dstRow;
+
+				uint16_t aa = (a >= 128) ? 1u : 0u;
+				uint16_t rr = (uint16_t)(r >> 3);
+				uint16_t gg = (uint16_t)(g >> 3);
+				uint16_t bb = (uint16_t)(b >> 3);
+
+				dst16[x] = (aa << 15) | (rr << 10) | (gg << 5) | bb;
+			}
+			else if ( fmt == D3DFMT_A4R4G4B4 )
+			{
+				uint16_t* dst16 = (uint16_t*)dstRow;
+
+				uint16_t aa = (uint16_t)(a >> 4);
+				uint16_t rr = (uint16_t)(r >> 4);
+				uint16_t gg = (uint16_t)(g >> 4);
+				uint16_t bb = (uint16_t)(b >> 4);
+
+				dst16[x] = (aa << 12) | (rr << 8) | (gg << 4) | bb;
+			}
+			else
+			{
+				// Unknown format, skip. You can log here if needed.
+			}
 		}
 	}
 
 	pTexture->UnlockRect(0);
 }
+
 
 int32_t __cdecl Hook_InitialiseTextureSurface(Nu3DBmpDataNode* p_bmpDataNode)
 {
@@ -751,159 +752,118 @@ bool Nu3D_CopyToDDSurface(int32_t texIndex, IDirect3DSurface9* p_d3dSurface)
 {
 	static NGNTextureData* texDataFreeList = (NGNTextureData*)0x009F6224;
 
-	if ( texIndex )
+	if ( ! texIndex || ! p_d3dSurface )
+		return false;
+
+	auto* p_bmpDataNode = texDataFreeList[texIndex].bmpDataNode;
+	if ( ! p_bmpDataNode )
+		return false;
+
+	HBITMAP l_bmpHandle = p_bmpDataNode->bitmapHandle;
+	if ( ! l_bmpHandle )
+		return false;
+
+	DIBSECTION l_dibSection{};
+	if ( ! GetObjectA(l_bmpHandle, sizeof(DIBSECTION), &l_dibSection) )
+		return false;
+
+	// Surface info
+	D3DSURFACE_DESC surfaceDesc{};
+	if ( FAILED(p_d3dSurface->GetDesc(&surfaceDesc)) )
+		return false;
+
+	const D3DFORMAT fmt = surfaceDesc.Format;
+
+	// Lock
+	D3DLOCKED_RECT lockedRect{};
+	if ( FAILED(p_d3dSurface->LockRect(&lockedRect, nullptr, 0)) )
+		return false;
+
+	// DC for palette reads
+	HDC l_dc = CreateCompatibleDC(nullptr);
+	if ( ! l_dc )
 	{
-		int32_t l_result = 0;
-
-		auto* p_bmpDataNode = texDataFreeList[texIndex].bmpDataNode;
-
-		if ( ! p_bmpDataNode )
-			return 0;
-
-		HBITMAP l_bmpHandle = p_bmpDataNode->bitmapHandle;
-		if ( ! l_bmpHandle )
-			return 0;
-
-		DIBSECTION l_dibSection;
-		if ( ! GetObjectA(l_bmpHandle, sizeof(DIBSECTION), &l_dibSection) )
-			return 0;
-
-		// Get surface description
-		D3DSURFACE_DESC surfaceDesc;
-		if ( FAILED(p_d3dSurface->GetDesc(&surfaceDesc)) )
-			return 0;
-
-		// Lock the surface
-		D3DLOCKED_RECT lockedRect;
-		HRESULT hr = p_d3dSurface->LockRect(&lockedRect, nullptr, 0);
-		if ( FAILED(hr) )
-		{
-			// TODO: Error handling
-			return 0;
-		}
-
-		// Create DC for bitmap
-		HDC l_dc = CreateCompatibleDC(nullptr);
-		if ( ! l_dc )
-		{
-			p_d3dSurface->UnlockRect();
-			return 0;
-		}
-
-		HGDIOBJ l_oldObject = SelectObject(l_dc, p_bmpDataNode->bitmapHandle);
-
-		// Get color table for 8-bit bitmaps
-		RGBQUAD l_colorTables[256];
-		if ( l_dibSection.dsBmih.biBitCount == 8 )
-			GetDIBColorTable(l_dc, 0, 256, l_colorTables);
-
-		// Calculate pixel format shifts
-		Nu3DPixelFormatInfo l_pixelFormat;
-		Nu3D_CalculatePixelFormatShifts(&l_pixelFormat, surfaceDesc.Format);
-
-		DWORD l_width = surfaceDesc.Width;
-		DWORD l_height = surfaceDesc.Height;
-
-		// Determine bits per pixel from format
-		DWORD l_bitCount = 32; // Default
-		if ( surfaceDesc.Format == D3DFMT_R5G6B5 || surfaceDesc.Format == D3DFMT_A1R5G5B5 || surfaceDesc.Format == D3DFMT_X1R5G5B5 ||
-		     surfaceDesc.Format == D3DFMT_A4R4G4B4 )
-		{
-			l_bitCount = 16;
-		}
-
-		// Copy pixels row by row
-		for ( DWORD l_currentRow = 0; l_currentRow < l_height; ++l_currentRow )
-		{
-			// Calculate source row (with scaling)
-			int32_t* l_srcRowPtr =
-			    (int32_t*)((uint8_t*)l_dibSection.dsBm.bmBits +
-			               l_dibSection.dsBm.bmWidthBytes * (l_dibSection.dsBm.bmHeight - l_currentRow * l_dibSection.dsBm.bmHeight / l_height - 1));
-
-			// Calculate destination row
-			uint8_t* l_destRowPtr = (uint8_t*)lockedRect.pBits + l_currentRow * lockedRect.Pitch;
-
-			if ( l_bitCount >= 15 )
-			{
-				if ( l_bitCount == 32 )
-				{
-					// 32-bit destination
-					uint32_t* l_destRow32 = (uint32_t*)l_destRowPtr;
-
-					for ( DWORD l_xPixel = 0; l_xPixel < l_width; ++l_xPixel )
-					{
-						BGRA l_color;
-						Nu3D_GetDIBPixelColor(&l_color, &l_dibSection, l_colorTables, l_srcRowPtr, l_xPixel * l_dibSection.dsBm.bmWidth / l_width);
-
-						// Shift and mask components
-						uint32_t pixel = 0;
-
-						if ( l_pixelFormat.greenShift < 0 )
-							pixel |= (l_color.g >> -l_pixelFormat.greenShift) & l_pixelFormat.greenMask;
-						else
-							pixel |= (l_color.g << l_pixelFormat.greenShift) & l_pixelFormat.greenMask;
-
-						if ( l_pixelFormat.blueShift < 0 )
-							pixel |= (l_color.b >> -l_pixelFormat.blueShift) & l_pixelFormat.blueMask;
-						else
-							pixel |= (l_color.b << l_pixelFormat.blueShift) & l_pixelFormat.blueMask;
-
-						if ( l_pixelFormat.redShift < 0 )
-							pixel |= (l_color.r >> -l_pixelFormat.redShift) & l_pixelFormat.redMask;
-						else
-							pixel |= (l_color.r << l_pixelFormat.redShift) & l_pixelFormat.redMask;
-
-						l_destRow32[l_xPixel] = pixel;
-					}
-				}
-				else if ( l_bitCount == 16 )
-				{
-					// 16-bit destination
-					uint16_t* l_destRow16 = (uint16_t*)l_destRowPtr;
-
-					for ( DWORD l_xPixel = 0; l_xPixel < l_width; ++l_xPixel )
-					{
-						BGRA l_color;
-						Nu3D_GetDIBPixelColor(&l_color, &l_dibSection, l_colorTables, l_srcRowPtr, l_xPixel * l_dibSection.dsBm.bmWidth / l_width);
-
-						// Shift and mask components
-						uint16_t pixel = 0;
-
-						if ( l_pixelFormat.greenShift < 0 )
-							pixel |= (l_color.g >> -l_pixelFormat.greenShift) & (uint16_t)l_pixelFormat.greenMask;
-						else
-							pixel |= (l_color.g << l_pixelFormat.greenShift) & (uint16_t)l_pixelFormat.greenMask;
-
-						if ( l_pixelFormat.blueShift < 0 )
-							pixel |= (l_color.b >> -l_pixelFormat.blueShift) & (uint16_t)l_pixelFormat.blueMask;
-						else
-							pixel |= (l_color.b << l_pixelFormat.blueShift) & (uint16_t)l_pixelFormat.blueMask;
-
-						if ( l_pixelFormat.redShift < 0 )
-							pixel |= (l_color.r >> -l_pixelFormat.redShift) & (uint16_t)l_pixelFormat.redMask;
-						else
-							pixel |= (l_color.r << l_pixelFormat.redShift) & (uint16_t)l_pixelFormat.redMask;
-
-						l_destRow16[l_xPixel] = pixel;
-					}
-				}
-			}
-
-			l_result = 1;
-		}
-
-		SelectObject(l_dc, l_oldObject);
-		DeleteDC(l_dc);
-
 		p_d3dSurface->UnlockRect();
+		return false;
+	}
 
-		return l_result;
-	}
-	else
+	HGDIOBJ l_oldObject = SelectObject(l_dc, p_bmpDataNode->bitmapHandle);
+
+	RGBQUAD l_colorTables[256]{};
+	if ( l_dibSection.dsBmih.biBitCount == 8 )
+		GetDIBColorTable(l_dc, 0, 256, l_colorTables);
+
+	const DWORD dstWidth = surfaceDesc.Width;
+	const DWORD dstHeight = surfaceDesc.Height;
+
+	bool ok = true;
+
+	for ( DWORD y = 0; y < dstHeight; ++y )
 	{
-		return 0;
+		// Source row (bottom up)
+		int srcRow = l_dibSection.dsBm.bmHeight - 1 - (int)(y * l_dibSection.dsBm.bmHeight / dstHeight);
+
+		int32_t* srcRowPtr = (int32_t*)((uint8_t*)l_dibSection.dsBm.bmBits + l_dibSection.dsBm.bmWidthBytes * srcRow);
+
+		uint8_t* dstRowPtr = (uint8_t*)lockedRect.pBits + y * lockedRect.Pitch;
+
+		for ( DWORD x = 0; x < dstWidth; ++x )
+		{
+			// Sample from source image with scaling
+			int srcX = (int)(x * l_dibSection.dsBm.bmWidth / dstWidth);
+
+			BGRA c{};
+			Nu3D_GetDIBPixelColor(&c, &l_dibSection, l_colorTables, srcRowPtr, srcX);
+
+			if ( fmt == D3DFMT_X8R8G8B8 || fmt == D3DFMT_A8R8G8B8 )
+			{
+				// Pack to 0xAARRGGBB (alpha full)
+				uint32_t* dst32 = (uint32_t*)dstRowPtr;
+				uint32_t pixel = (0xFFu << 24) | ((uint32_t)c.r << 16) | ((uint32_t)c.g << 8) | ((uint32_t)c.b);
+
+				dst32[x] = pixel;
+			}
+			else if ( fmt == D3DFMT_R5G6B5 )
+			{
+				uint16_t* dst16 = (uint16_t*)dstRowPtr;
+
+				uint16_t r = (uint16_t)(c.r >> 3); // 5 bits
+				uint16_t g = (uint16_t)(c.g >> 2); // 6 bits
+				uint16_t b = (uint16_t)(c.b >> 3); // 5 bits
+
+				dst16[x] = (r << 11) | (g << 5) | b;
+			}
+			else if ( fmt == D3DFMT_A1R5G5B5 )
+			{
+				uint16_t* dst16 = (uint16_t*)dstRowPtr;
+
+				uint16_t a = (c.a >= 128) ? 1u : 0u;
+				uint16_t r = (uint16_t)(c.r >> 3);
+				uint16_t g = (uint16_t)(c.g >> 3);
+				uint16_t b = (uint16_t)(c.b >> 3);
+
+				dst16[x] = (a << 15) | (r << 10) | (g << 5) | b;
+			}
+			else
+			{
+				// Unknown format, bail
+				ok = false;
+				break;
+			}
+		}
+
+		if ( ! ok )
+			break;
 	}
+
+	SelectObject(l_dc, l_oldObject);
+	DeleteDC(l_dc);
+
+	p_d3dSurface->UnlockRect();
+
+	return ok;
 }
+
 
 int32_t __cdecl Hook_GlueSetBackdrop(int32_t p_textureIndex)
 {
@@ -1059,8 +1019,6 @@ HRESULT Hook_PresentFrame()
 	if ( ! pDevice )
 		return 0x8200000E;
 
-	// In DX9, Present() handles both fullscreen flip and windowed blit
-	// No need to check IsLost manually - Present will return the error
 	if ( frameworkVar->m_bIsFullscreen )
 	{
 		// Fullscreen - present everything
@@ -1171,31 +1129,67 @@ HRESULT __cdecl Hook_ProcessVerticesOnBuffer(
     DWORD p_dwFlags
 )
 {
-	IDirect3DDevice9* pDevice = (IDirect3DDevice9*)frameworkVar->m_pd3dDevice;
+	IDirect3DDevice9* pDevice = frameworkVar ? frameworkVar->m_pd3dDevice : nullptr;
 	if ( ! pDevice )
 		return E_FAIL;
 
-	// Convert vertex operation flags
+	// If this call is only asking for extents and there is no dest buffer,
+	// we can just ignore it for now.
+	if ( ! p_destBuffer && (p_dwVertexOp & 0x4) ) // D3DVOP_EXTENTS
+		return D3D_OK;
+
+	if ( ! p_srcBuffer || ! p_destBuffer )
+		return E_FAIL;
+
+	D3DVERTEXBUFFER_DESC srcDesc{};
+	D3DVERTEXBUFFER_DESC dstDesc{};
+
+	if ( FAILED(p_srcBuffer->GetDesc(&srcDesc)) )
+		return E_FAIL;
+
+	if ( FAILED(p_destBuffer->GetDesc(&dstDesc)) )
+		return E_FAIL;
+
+	int32_t stride = 0;
+
+	if ( srcDesc.FVF == 0x1C4 )
+		stride = 32;
+
+	if ( srcDesc.FVF == 0x152 )
+		stride = 36;
+
+	if ( ! stride )
+		return E_FAIL;
+
+	// Bind source VB and FVF so ProcessVertices has a valid input stream.
+	HRESULT hr = pDevice->SetStreamSource(0, p_srcBuffer, 0, stride);
+	if ( FAILED(hr) )
+		return hr;
+
+	hr = pDevice->SetFVF(srcDesc.FVF);
+	if ( FAILED(hr) )
+		return hr;
+
+	// Map D3D3 vertex op / flags to D3D9 flags.
 	DWORD dx9Flags = 0;
 
-	// D3DVOP_TRANSFORM = 0x1 (transform vertices)
-	// D3DVOP_LIGHT = 0x2 (light vertices)
-	// D3DVOP_EXTENTS = 0x4 (compute extents)
-	// D3DVOP_CLIP = 0x400 (perform clipping)
+	// D3DVOP_EXTENTS means "only compute extents, don’t copy vertices" in D3D3.
+	// In D3D9 that’s D3DPV_DONOTCOPYDATA.
+	if ( p_dwVertexOp & 0x4 ) // D3DVOP_EXTENTS
+		dx9Flags |= D3DPV_DONOTCOPYDATA;
 
-	// In DX9, ProcessVertices is simpler - it always transforms
-	// The flags parameter controls lighting and clipping
-	if ( p_dwVertexOp & 0x2 )            // lighting
-		dx9Flags |= D3DPV_DONOTCOPYDATA; // or 0, depending on needs
+	// Other ops (TRANSFORM=1, LIGHT=2, CLIP=0x400) are implied in D3D9;
 
-	return pDevice->ProcessVertices(
+	hr = pDevice->ProcessVertices(
 	    p_dwSrcIndex,  // SrcStartIndex
 	    p_dwDestIndex, // DestIndex
 	    p_dwCount,     // VertexCount
 	    p_destBuffer,  // pDestBuffer
-	    nullptr,       // pVertexDecl (nullptr = use FVF)
-	    dx9Flags       // Flags
-	);
+	    nullptr,       // pVertexDecl (nullptr => use FVF we just set)
+	    dx9Flags
+	); // Flags
+
+	return hr;
 }
 
 HRESULT __cdecl Hook_DrawIndexedPrimitiveVB(
@@ -1223,8 +1217,7 @@ HRESULT __cdecl Hook_DrawIndexedPrimitiveVB(
 
 	UINT numVertices = desc.Size / vertexSize;
 
-	// Set the vertex buffer as stream source
-	pDevice->SetStreamSource(0, p_vertexBuffer, 0, vertexSize); // 32 = vertex size (adjust based on FVF)
+	pDevice->SetStreamSource(0, p_vertexBuffer, 0, vertexSize);
 
 	// DX9 requires an index buffer, not a pointer
 	// We need to create a temporary index buffer
@@ -1287,10 +1280,10 @@ HRESULT __cdecl Hook_DrawIndexedPrimitive(
 
 	// Calculate vertex stride from FVF
 	UINT vertexStride = 0;
-	if ( p_dwVertexTypeDesc == 0x1C4 ) // Your FVF
-		vertexStride = 32;             // Adjust based on actual FVF
+	if ( p_dwVertexTypeDesc == 0x1C4 )
+		vertexStride = 32;
 	else if ( p_dwVertexTypeDesc == 0x152 )
-		vertexStride = 36; // Adjust based on actual FVF
+		vertexStride = 36;
 
 	// Set FVF
 	pDevice->SetFVF(p_dwVertexTypeDesc);
@@ -1344,10 +1337,67 @@ HRESULT __cdecl Hook_SetTextureStageState(DWORD p_stage, D3DTEXTURESTAGESTATETYP
 	return frameworkVar->m_pd3dDevice->SetTextureStageState(p_stage, p_state, p_value);
 }
 
-HRESULT __cdecl Hook_SetRenderState(D3DRENDERSTATETYPE p_renderStateType, DWORD p_value)
+static D3DBLEND ConvertOldBlend(int value)
 {
-	return frameworkVar->m_pd3dDevice->SetRenderState(p_renderStateType, p_value);
+    switch (value)
+    {
+        case 1: return D3DBLEND_ZERO;
+        case 2: return D3DBLEND_ONE;
+        case 3: return D3DBLEND_SRCCOLOR;
+        case 4: return D3DBLEND_INVSRCCOLOR;
+        case 5: return D3DBLEND_SRCALPHA;
+        case 6: return D3DBLEND_INVSRCALPHA;
+        case 7: return D3DBLEND_DESTALPHA;
+        case 8: return D3DBLEND_INVDESTALPHA;
+        case 9: return D3DBLEND_DESTCOLOR;
+        case 10: return D3DBLEND_INVDESTCOLOR;
+    }
+    return D3DBLEND_ONE; // safe fallback
 }
+
+
+HRESULT __cdecl Hook_SetRenderState(D3DRENDERSTATETYPE state, DWORD value)
+{
+    IDirect3DDevice9* dev = frameworkVar->m_pd3dDevice;
+
+    switch (state)
+    {
+        case D3DRS_SRCBLEND:
+            return dev->SetRenderState(D3DRS_SRCBLEND, ConvertOldBlend(value));
+
+        case D3DRS_DESTBLEND:
+            return dev->SetRenderState(D3DRS_DESTBLEND, ConvertOldBlend(value));
+
+        case D3DRS_ALPHABLENDENABLE:
+            return dev->SetRenderState(D3DRS_ALPHABLENDENABLE, value ? TRUE : FALSE);
+
+        case D3DRS_ZENABLE:
+            return dev->SetRenderState(D3DRS_ZENABLE, value);
+
+        case D3DRS_ZWRITEENABLE:
+            return dev->SetRenderState(D3DRS_ZWRITEENABLE, value);
+
+        case 21:
+            // 4 = MODULATE
+            // 3 = DECAL (used for font fades)
+            //
+            if (value == 4)
+            {
+                dev->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+                dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+            }
+            else if (value == 3)
+            {
+                dev->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_BLENDTEXTUREALPHA);
+                dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
+            }
+            return D3D_OK;
+
+        default:
+            return dev->SetRenderState(state, value);
+    }
+}
+
 
 int32_t Hook_GlueBackdropBltFast()
 {
@@ -1361,8 +1411,6 @@ int32_t Hook_GlueBackdropBltFast()
 	if ( FAILED(hr) || ! backBuffer )
 		return 0;
 
-	// Copy whole surface: DX9 replacement for BltFast(0,0, src, nullptr, DDBLTFAST_SRCCOLORKEY)
-	// (this ignores colour key; if you want colour key, you’ll need to bake alpha in Nu3D_CopyToDDSurface)
 	hr = device->StretchRect(
 	    Glue::g_backdrop, // src surface
 	    nullptr,          // src rect (whole)
@@ -1450,5 +1498,5 @@ void Renderer::Init()
 
 void Renderer::Render()
 {
-	// Add DX9 rendering code here
+	
 }

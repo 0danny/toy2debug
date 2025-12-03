@@ -21,7 +21,6 @@ struct BGRA
   uint8_t a;
 };
 
-// Structs - keeping exact same layout, only changing pointer types
 struct DrawingDeviceSlot
 {
 	int32_t m_valid;
