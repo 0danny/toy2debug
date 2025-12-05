@@ -1,7 +1,7 @@
 #include <windows.h>
 #include <print>
 
-#include "Renderer.hpp"
+#include "Renderer/Renderer.hpp"
 #include "Utils.hpp"
 
 namespace
@@ -10,18 +10,18 @@ namespace
 	inline Renderer g_renderer;
 }
 
-void InitRenderer()
+void initRenderer()
 {
-	g_renderer.Init();
+	g_renderer.init();
 }
 
-DWORD WINAPI MainThread(LPVOID)
+DWORD WINAPI mainThread(LPVOID)
 {
-	Utils::InitConsole();
+	Utils::initConsole();
 
 	// allow module to finish initialisation
 
-	InitRenderer();
+	initRenderer();
 
 	std::println("[Main]: Installing rendering hooks.");
 
@@ -33,7 +33,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID)
 	if ( reason == DLL_PROCESS_ATTACH )
 	{
 		DisableThreadLibraryCalls(hModule);
-		CreateThread(nullptr, 0, MainThread, nullptr, 0, nullptr);
+		CreateThread(nullptr, 0, mainThread, nullptr, 0, nullptr);
 	}
 
 	return TRUE;

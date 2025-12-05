@@ -6,7 +6,7 @@
 
 namespace Utils
 {
-	void InitConsole()
+	void initConsole()
 	{
 		AllocConsole();
 		FILE* f;

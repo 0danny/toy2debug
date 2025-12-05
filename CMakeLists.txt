@@ -1,10 +1,5 @@
 set(PROJECT_NAME "toy2debug")
 
-# Need 32-bit dll and exe for injecting into Toy2
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32" CACHE STRING "" FORCE)
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -m32" CACHE STRING "" FORCE)
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -m32" CACHE STRING "" FORCE)
-
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -13,6 +8,7 @@ cmake_minimum_required(VERSION 3.20.0)
 project(${PROJECT_NAME} C CXX RC)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/ToyDebug)
 
 set(IMGUI_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/external/include/ImGui)
 
@@ -37,9 +33,6 @@ set(IMGUI_SOURCES
     ${IMGUI_FOLDER}/imgui_impl_dx9.cpp
     ${IMGUI_FOLDER}/imgui_impl_dx9.h
 
-    ${IMGUI_FOLDER}/imgui_impl_dx3.cpp
-    ${IMGUI_FOLDER}/imgui_impl_dx3.h
-
     ${IMGUI_FOLDER}/imgui_impl_win32.cpp
     ${IMGUI_FOLDER}/imgui_impl_win32.h
 
@@ -56,9 +49,35 @@ set(IMGUI_SOURCES
 set(TOYDEBUG_SOURCES
     src/ToyDebug/Main.cpp
 
-    src/ToyDebug/Renderer.cpp
-    src/ToyDebug/Renderer.hpp
+    src/ToyDebug/Renderer/Renderer.cpp
+    src/ToyDebug/Renderer/Renderer.hpp
+    src/ToyDebug/Renderer/RendererCommon.hpp
 
+    src/ToyDebug/Renderer/Hooks/DeviceHooks.cpp
+    src/ToyDebug/Renderer/Hooks/DeviceHooks.hpp
+
+    src/ToyDebug/Renderer/Hooks/LightsHooks.cpp
+    src/ToyDebug/Renderer/Hooks/LightsHooks.hpp
+
+    src/ToyDebug/Renderer/Hooks/VBHooks.cpp
+    src/ToyDebug/Renderer/Hooks/VBHooks.hpp
+
+    src/ToyDebug/Renderer/Hooks/DrawHooks.cpp
+    src/ToyDebug/Renderer/Hooks/DrawHooks.hpp
+
+    src/ToyDebug/Renderer/Hooks/PipelineHooks.cpp
+    src/ToyDebug/Renderer/Hooks/PipelineHooks.hpp
+
+    src/ToyDebug/Renderer/Hooks/GlueHooks.cpp
+    src/ToyDebug/Renderer/Hooks/GlueHooks.hpp
+
+    src/ToyDebug/Renderer/Hooks/TexMatHooks.cpp
+    src/ToyDebug/Renderer/Hooks/TexMatHooks.hpp
+
+    src/ToyDebug/Renderer/Hooks/StubHooks.hpp
+
+    src/ToyDebug/ToyTypes.hpp
+    src/ToyDebug/Hook.hpp
     src/ToyDebug/Utils.hpp
 )
 

@@ -41,25 +41,27 @@ def run_build(launch_app, build_type):
     os.makedirs(BUILD_FOLDER, exist_ok=True)
     os.chdir(BUILD_FOLDER)
 
-    # Configure with CMake
+    # Configure with CMake for 32-bit
     track_process([
         'cmake',
         '..',
-        "-G", "Ninja",
-        f'-DCMAKE_BUILD_TYPE={build_type}',
+        "-G", "Visual Studio 17 2022",
+        "-A", "Win32",
     ])
 
-    # Build with NMake
-    track_process(['ninja'])
+    # Build with MSBuild
+    track_process(['cmake', '--build', '.', '--config', build_type])
 
     # Copy any assets
     copy_assets()
 
     # Launch application if requested
     if launch_app:
-        exe_path = os.path.join(os.getcwd(), get_executable_name())
+        output_folder = os.path.join(os.getcwd(), build_type)
+        exe_path = os.path.join(output_folder, get_executable_name())
+
         print(f"----------------- Starting {PROJECT_NAME} -----------------")
-        subprocess.run([exe_path])
+        subprocess.Popen([exe_path], cwd=output_folder)
 
 def main():
     parser = argparse.ArgumentParser(
