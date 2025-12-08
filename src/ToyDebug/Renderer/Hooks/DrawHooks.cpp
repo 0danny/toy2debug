@@ -2,6 +2,7 @@
 #include "Renderer/RendererCommon.hpp"
 
 #include <d3dtypes.h>
+#include <print>
 
 HRESULT CON_CDECL
 hook_DrawIndexedPrimitiveVB(D3DPRIMITIVETYPE primitiveType, LPDIRECT3DVERTEXBUFFER9 vertexBuffer, WORD* indices, DWORD indexCount, DWORD flags)
@@ -14,20 +15,20 @@ hook_DrawIndexedPrimitiveVB(D3DPRIMITIVETYPE primitiveType, LPDIRECT3DVERTEXBUFF
 	D3DVERTEXBUFFER_DESC desc;
 	vertexBuffer->GetDesc(&desc);
 
-	int32_t vertexSize = 0;
-
-	if ( desc.FVF == 0x1C4 )
-		vertexSize = 32;
-
-	if ( desc.FVF == 0x152 )
-		vertexSize = 36;
-
+	int32_t vertexSize = RendererCommon::getStrideFromFVF(desc.FVF);
 	uint32_t numVertices = desc.Size / vertexSize;
 
 	device->SetStreamSource(0, vertexBuffer, 0, vertexSize);
 
 	IDirect3DIndexBuffer9* pIndexBuffer = nullptr;
-	HRESULT hr = device->CreateIndexBuffer(indexCount * sizeof(WORD), D3DUSAGE_WRITEONLY, D3DFMT_INDEX16, D3DPOOL_DEFAULT, &pIndexBuffer, nullptr);
+	HRESULT hr = device->CreateIndexBuffer(
+	    indexCount * sizeof(WORD),
+	    D3DUSAGE_WRITEONLY | D3DUSAGE_SOFTWAREPROCESSING,
+	    D3DFMT_INDEX16,
+	    D3DPOOL_DEFAULT,
+	    &pIndexBuffer,
+	    nullptr
+	);
 
 	if ( SUCCEEDED(hr) )
 	{
@@ -39,6 +40,7 @@ hook_DrawIndexedPrimitiveVB(D3DPRIMITIVETYPE primitiveType, LPDIRECT3DVERTEXBUFF
 			pIndexBuffer->Unlock();
 		}
 
+		device->SetFVF(desc.FVF);
 		device->SetIndices(pIndexBuffer);
 
 		// Calculate primitive count based on type
@@ -53,14 +55,7 @@ hook_DrawIndexedPrimitiveVB(D3DPRIMITIVETYPE primitiveType, LPDIRECT3DVERTEXBUFF
 		else if ( primitiveType == D3DPT_LINESTRIP )
 			primCount = indexCount - 1;
 
-		hr = device->DrawIndexedPrimitive(
-		    primitiveType,
-		    0,           // BaseVertexIndex
-		    0,           // MinVertexIndex
-		    numVertices, // NumVertices
-		    0,           // StartIndex
-		    primCount    // PrimitiveCount
-		);
+		hr = device->DrawIndexedPrimitive(primitiveType, 0, 0, numVertices, 0, primCount);
 
 		pIndexBuffer->Release();
 	}
@@ -83,13 +78,7 @@ HRESULT CON_CDECL hook_DrawIndexedPrimitive(
 	if ( ! device )
 		return E_FAIL;
 
-	uint32_t vertexStride = 0;
-
-	if ( dwVertexTypeDesc == 0x1C4 )
-		vertexStride = 32;
-
-	else if ( dwVertexTypeDesc == 0x152 )
-		vertexStride = 36;
+	uint32_t vertexStride = RendererCommon::getStrideFromFVF(dwVertexTypeDesc);
 
 	device->SetFVF(dwVertexTypeDesc);
 
@@ -104,16 +93,8 @@ HRESULT CON_CDECL hook_DrawIndexedPrimitive(
 	else if ( d3dptPrimitiveType == D3DPT_LINESTRIP )
 		primCount = dwIndexCount - 1;
 
-	HRESULT result = device->DrawIndexedPrimitiveUP(
-	    d3dptPrimitiveType,
-	    0,              // MinVertexIndex
-	    dwVertexCount,  // NumVertices
-	    primCount,      // PrimitiveCount
-	    lpwIndices,     // pIndexData
-	    D3DFMT_INDEX16, // IndexDataFormat
-	    lpvVertices,    // pVertexStreamZeroData
-	    vertexStride    // VertexStreamZeroStride
-	);
+	HRESULT result =
+	    device->DrawIndexedPrimitiveUP(d3dptPrimitiveType, 0, dwVertexCount, primCount, lpwIndices, D3DFMT_INDEX16, lpvVertices, vertexStride);
 
 	return result;
 }
@@ -122,14 +103,7 @@ HRESULT CON_CDECL hook_DrawPrimitive(D3DPRIMITIVETYPE primitiveType, DWORD verte
 {
 	auto* device = RendererCommon::g_framework->pd3dDevice;
 
-	uint32_t stride = 0;
-
-	switch ( vertexTypeDesc )
-	{
-		case 0x1C4: stride = 32; break;
-		case 0x152: stride = 36; break;
-		default: return D3D_OK;
-	}
+	uint32_t stride = RendererCommon::getStrideFromFVF(vertexTypeDesc);
 
 	if ( stride == 0 || vertexCount == 0 )
 		return D3D_OK;
@@ -152,6 +126,28 @@ HRESULT CON_CDECL hook_DrawPrimitive(D3DPRIMITIVETYPE primitiveType, DWORD verte
 		return D3D_OK;
 
 	device->SetFVF(vertexTypeDesc);
+
+	if ( vertexTypeDesc == 0x1C4 && vertexCount > 0 )
+	{
+		struct Vertex_0x1C4
+		{
+			float x, y, z, rhw;
+			DWORD diffuse;
+			DWORD specular;
+			float u, v;
+		};
+
+		Vertex_0x1C4* v = (Vertex_0x1C4*)vertices;
+
+		for ( DWORD i = 0; i < vertexCount; i++ )
+		{
+			if ( v[i].rhw <= 0.0f )
+			{
+				// This primitive is behind the camera, don't draw it
+				return D3D_OK;
+			}
+		}
+	}
 
 	return device->DrawPrimitiveUP(primitiveType, primCount, vertices, stride);
 }

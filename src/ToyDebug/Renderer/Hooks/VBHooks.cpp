@@ -3,6 +3,7 @@
 
 #include <stdexcept>
 #include <d3dtypes.h>
+#include <print>
 
 HRESULT CON_CDECL hook_ReleaseVertexBuffer(LPDIRECT3DVERTEXBUFFER9 buffer)
 {
@@ -14,22 +15,11 @@ HRESULT CON_CDECL hook_ReleaseVertexBuffer(LPDIRECT3DVERTEXBUFFER9 buffer)
 
 HRESULT CON_CDECL hook_CreateVertexBuffer(D3DVERTEXBUFFERDESC* desc, LPDIRECT3DVERTEXBUFFER9* outBuffer, DWORD flags)
 {
-	// Just hardcoded since theres not alot of them, 0x1C4, 0x152
-	if ( desc->dwFVF != 0x1C4 && desc->dwFVF != 0x152 )
-		throw std::runtime_error("FVF doesn't match!");
-
-	int32_t vertexSize = 0;
-
-	// TODO: FIX
-	if ( desc->dwFVF == 0x1C4 )
-		vertexSize = 32;
-
-	if ( desc->dwFVF == 0x152 )
-		vertexSize = 36;
+	int32_t vertexSize = RendererCommon::getStrideFromFVF(desc->dwFVF);
 
 	uint32_t length = desc->dwNumVertices * vertexSize;
 
-	DWORD usage = D3DUSAGE_WRITEONLY;
+	DWORD usage = D3DUSAGE_WRITEONLY | D3DUSAGE_SOFTWAREPROCESSING;
 	D3DPOOL pool = D3DPOOL_DEFAULT;
 
 	return RendererCommon::g_framework->pd3dDevice->CreateVertexBuffer(length, usage, desc->dwFVF, pool, outBuffer, nullptr);
@@ -74,137 +64,43 @@ HRESULT CON_CDECL hook_OptimizeVertexBuffer(LPDIRECT3DVERTEXBUFFER9 buffer, void
 }
 
 HRESULT CON_CDECL hook_ProcessVerticesOnBuffer(
-    LPDIRECT3DVERTEXBUFFER9 srcBuffer,
+    LPDIRECT3DVERTEXBUFFER9 destBuffer,
     DWORD dwVertexOp,
     DWORD dwDestIndex,
     DWORD dwCount,
-    LPDIRECT3DVERTEXBUFFER9 destBuffer,
+    LPDIRECT3DVERTEXBUFFER9 srcBuffer,
     DWORD dwSrcIndex,
     DWORD dwFlags
 )
 {
-	if ( ! RendererCommon::g_framework || ! RendererCommon::g_framework->pd3dDevice )
-		return D3D_OK;
+	auto* device = RendererCommon::g_framework->pd3dDevice;
 
-	if ( ! destBuffer )
-		return D3D_OK;
-
-	if ( ! srcBuffer || ! destBuffer || dwCount == 0 )
+	if ( ! device || ! srcBuffer || ! destBuffer || dwCount == 0 )
 		return D3D_OK;
 
 	D3DVERTEXBUFFER_DESC srcDesc{};
-	D3DVERTEXBUFFER_DESC dstDesc{};
-
 	if ( FAILED(srcBuffer->GetDesc(&srcDesc)) )
 		return D3D_OK;
 
-	if ( FAILED(destBuffer->GetDesc(&dstDesc)) )
+	D3DVERTEXBUFFER_DESC destDesc{};
+	if ( FAILED(destBuffer->GetDesc(&destDesc)) )
 		return D3D_OK;
 
-	// Figure out strides from FVF
-	uint32_t srcStride = 0;
-	uint32_t dstStride = 0;
+	uint32_t stride = RendererCommon::getStrideFromFVF(srcDesc.FVF);
 
-	switch ( srcDesc.FVF )
-	{
-		case 0x1C4: srcStride = 32; break;
-		case 0x152: srcStride = 36; break;
-		default: break;
-	}
+	device->SetStreamSource(0, srcBuffer, 0, stride);
+	device->SetFVF(srcDesc.FVF);
 
-	switch ( dstDesc.FVF )
-	{
-		case 0x1C4: dstStride = 32; break;
-		case 0x152: dstStride = 36; break;
-		default: break;
-	}
+	HRESULT result = device->ProcessVertices(
+	    dwSrcIndex,
+	    dwDestIndex,
+	    dwCount,
+	    destBuffer,
+	    nullptr,
+	    0 // must use this flag for clean FFP processing
+	);
 
-	if ( ! srcStride || ! dstStride )
-		return D3D_OK;
-
-	void* srcPtr = nullptr;
-	void* dstPtr = nullptr;
-
-	if ( FAILED(srcBuffer->Lock(0, 0, &srcPtr, D3DLOCK_READONLY)) )
-		return D3D_OK;
-
-	if ( FAILED(destBuffer->Lock(0, 0, &dstPtr, 0)) )
-	{
-		srcBuffer->Unlock();
-		return D3D_OK;
-	}
-
-	uint8_t* srcBytes = static_cast<uint8_t*>(srcPtr);
-	uint8_t* dstBytes = static_cast<uint8_t*>(dstPtr);
-
-	const uint32_t srcCapacity = srcDesc.Size / srcStride;
-	const uint32_t dstCapacity = dstDesc.Size / dstStride;
-
-	if ( dwSrcIndex >= srcCapacity || dwDestIndex >= dstCapacity )
-	{
-		destBuffer->Unlock();
-		srcBuffer->Unlock();
-		return D3D_OK;
-	}
-
-	uint32_t maxCount = dwCount;
-
-	if ( dwSrcIndex + maxCount > srcCapacity )
-		maxCount = srcCapacity - dwSrcIndex;
-
-	if ( dwDestIndex + maxCount > dstCapacity )
-		maxCount = dstCapacity - dwDestIndex;
-
-	if ( maxCount == 0 )
-	{
-		destBuffer->Unlock();
-		srcBuffer->Unlock();
-		return D3D_OK;
-	}
-
-	const bool sameBuffer = (srcBuffer == destBuffer) && (srcStride == dstStride);
-
-	const uint32_t copyStride = (srcDesc.FVF == dstDesc.FVF) ? srcStride : (srcStride < dstStride ? srcStride : dstStride);
-
-	if ( sameBuffer )
-	{
-		// Handle potential overlap safely using order based on indices
-		if ( dwDestIndex > dwSrcIndex )
-		{
-			// Copy backwards
-			for ( int32_t i = (int32_t)maxCount - 1; i >= 0; --i )
-			{
-				uint8_t* s = srcBytes + (dwSrcIndex + i) * srcStride;
-				uint8_t* d = dstBytes + (dwDestIndex + i) * dstStride;
-				std::memmove(d, s, copyStride);
-			}
-		}
-		else
-		{
-			// Copy forwards
-			for ( int32_t i = 0; i < maxCount; ++i )
-			{
-				uint8_t* s = srcBytes + (dwSrcIndex + i) * srcStride;
-				uint8_t* d = dstBytes + (dwDestIndex + i) * dstStride;
-				std::memmove(d, s, copyStride);
-			}
-		}
-	}
-	else
-	{
-		// Different buffers – no overlap concerns
-		for ( int32_t i = 0; i < maxCount; ++i )
-		{
-			uint8_t* s = srcBytes + (dwSrcIndex + i) * srcStride;
-			uint8_t* d = dstBytes + (dwDestIndex + i) * dstStride;
-			std::memcpy(d, s, copyStride);
-		}
-	}
-
-	destBuffer->Unlock();
-	srcBuffer->Unlock();
-
-	return D3D_OK;
+	return result;
 }
 
 bool VBHooks::init()

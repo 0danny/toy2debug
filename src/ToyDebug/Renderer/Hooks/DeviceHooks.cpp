@@ -3,6 +3,8 @@
 
 #include <print>
 
+static bool hardcodeRes = true;
+
 // All of the hooks for building our modified drawing device are located here
 void setWindowSize(CD3DFramework* framework, DDAppDisplayMode* displayMode, uint8_t flags)
 {
@@ -17,6 +19,18 @@ void setWindowSize(CD3DFramework* framework, DDAppDisplayMode* displayMode, uint
 	}
 	else
 	{
+		if ( hardcodeRes )
+		{
+			std::println("[Debug]: Hardcoding resolution to 1600x900\n");
+			SetRect(&framework->rcViewportRect, 0, 0, 1600, 900);
+			SetRect(&framework->rcScreenRect, 0, 0, 1600, 900);
+
+			framework->dwRenderWidth = 1600;
+			framework->dwRenderHeight = 900;
+
+			return;
+		}
+
 		// Windowed mode
 		GetClientRect(framework->hWnd, &framework->rcViewportRect);
 		GetClientRect(framework->hWnd, &framework->rcScreenRect);
@@ -63,12 +77,15 @@ int32_t createD3DDevice(CD3DFramework* framework)
 	d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
 	d3dpp.hDeviceWindow = framework->hWnd;
 
+	printf("Render Width -> %d\n", framework->dwRenderWidth);
+	printf("Render Height -> %d\n", framework->dwRenderHeight);
+
 	// clang-format off
     HRESULT hr = framework->pDD->CreateDevice(
         D3DADAPTER_DEFAULT,
         D3DDEVTYPE_HAL,
         framework->hWnd,
-        D3DCREATE_HARDWARE_VERTEXPROCESSING,
+        D3DCREATE_MIXED_VERTEXPROCESSING,
         &d3dpp,
         &framework->pd3dDevice);
 	// clang-format on
@@ -157,6 +174,36 @@ HRESULT CON_FASTCALL hook_InitalizeForWindow(
 	framework->slots[0].valid = 1;
 
 	framework->initialized = 1;
+
+	// GIVE US OUR WINDOW BACK!
+	if ( ! framework->bIsFullscreen )
+	{
+		LONG style = GetWindowLong(framework->hWnd, GWL_STYLE);
+
+		// restore normal window, disable resizing
+		style |= WS_OVERLAPPEDWINDOW;
+		style &= ~WS_THICKFRAME;
+		style &= ~WS_MAXIMIZEBOX;
+
+		SetWindowLong(framework->hWnd, GWL_STYLE, style);
+
+		// ensure not topmost
+		SetWindowPos(framework->hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+
+		// correct sized window for the client area
+		RECT r{};
+		r.left = 0;
+		r.top = 0;
+		r.right = framework->dwRenderWidth;
+		r.bottom = framework->dwRenderHeight;
+
+		AdjustWindowRect(&r, style, false);
+
+		int32_t finalWidth = r.right - r.left;
+		int32_t finalHeight = r.bottom - r.top;
+
+		SetWindowPos(framework->hWnd, nullptr, 0, 0, finalWidth, finalHeight, SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
+	}
 
 	return D3D_OK;
 }

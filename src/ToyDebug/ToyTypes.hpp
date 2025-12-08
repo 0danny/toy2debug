@@ -5,6 +5,9 @@
 #include <d3d9types.h>
 #include <d3d9caps.h>
 #include <ddraw.h>
+#include <d3d.h>
+#include <d3dtypes.h>
+#include <d3dcaps.h>
 
 struct RGBA
 {
@@ -30,76 +33,6 @@ struct DrawingDeviceSlot
 	int32_t height;
 	IDirect3DSurface9* surface1;
 	IDirect3DSurface9* surface2;
-};
-
-struct D3DTRANSFORMCAPS
-{
-	DWORD dwSize;
-	DWORD dwCaps;
-};
-
-struct D3DLIGHTINGCAPS
-{
-	DWORD dwSize;
-	DWORD dwCaps;
-	DWORD dwLightingModel;
-	DWORD dwNumLights;
-};
-
-struct D3DPRIMCAPS
-{
-	DWORD dwSize;
-	DWORD dwMiscCaps;
-	DWORD dwRasterCaps;
-	DWORD dwZCmpCaps;
-	DWORD dwSrcBlendCaps;
-	DWORD dwDestBlendCaps;
-	DWORD dwAlphaCmpCaps;
-	DWORD dwShadeCaps;
-	DWORD dwTextureCaps;
-	DWORD dwTextureFilterCaps;
-	DWORD dwTextureBlendCaps;
-	DWORD dwTextureAddressCaps;
-	DWORD dwStippleWidth;
-	DWORD dwStippleHeight;
-};
-
-struct D3DDEVICEDESC
-{
-	DWORD dwSize;
-	DWORD dwFlags;
-	DWORD dcmColorModel;
-	DWORD dwDevCaps;
-	D3DTRANSFORMCAPS dtcTransformCaps;
-	BOOL bClipping;
-	D3DLIGHTINGCAPS dlcLightingCaps;
-	D3DPRIMCAPS dpcLineCaps;
-	D3DPRIMCAPS dpcTriCaps;
-	DWORD dwDeviceRenderBitDepth;
-	DWORD dwDeviceZBufferBitDepth;
-	DWORD dwMaxBufferSize;
-	DWORD dwMaxVertexCount;
-	DWORD dwMinTextureWidth;
-	DWORD dwMinTextureHeight;
-	DWORD dwMaxTextureWidth;
-	DWORD dwMaxTextureHeight;
-	DWORD dwMinStippleWidth;
-	DWORD dwMaxStippleWidth;
-	DWORD dwMinStippleHeight;
-	DWORD dwMaxStippleHeight;
-	DWORD dwMaxTextureRepeat;
-	DWORD dwMaxTextureAspectRatio;
-	DWORD dwMaxAnisotropy;
-	float dvGuardBandLeft;
-	float dvGuardBandTop;
-	float dvGuardBandRight;
-	float dvGuardBandBottom;
-	float dvExtentsAdjust;
-	DWORD dwStencilCaps;
-	DWORD dwFVFCaps;
-	DWORD dwTextureOpCaps;
-	WORD wMaxTextureBlendStages;
-	WORD wMaxSimultaneousTextures;
 };
 
 struct CD3DFramework

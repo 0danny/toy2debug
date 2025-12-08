@@ -41,15 +41,57 @@ HRESULT CON_CDECL hook_SetLightState(D3DLIGHTSTATETYPE lightState, DWORD value)
 				return D3D_OK;
 			}
 
-			auto* mat = reinterpret_cast<D3DMATERIAL9*>(value);
-
-			// Make sure lighting is on when they set a material
 			device->SetRenderState(D3DRS_LIGHTING, TRUE);
+			auto* mat = reinterpret_cast<D3DMATERIAL9*>(value);
 			return device->SetMaterial(mat);
 		}
 
+		case D3DLIGHTSTATE_FOGMODE:
+		{
+			// Convert D3D3 fog modes to D3D9
+			if ( value == 0 )
+			{
+				device->SetRenderState(D3DRS_FOGENABLE, FALSE);
+			}
+			else
+			{
+				device->SetRenderState(D3DRS_FOGENABLE, TRUE);
+
+				D3DFOGMODE fogMode;
+				switch ( value )
+				{
+					case 1: fogMode = D3DFOG_EXP; break;
+					case 2: fogMode = D3DFOG_EXP2; break;
+					case 3: fogMode = D3DFOG_LINEAR; break;
+					default: fogMode = D3DFOG_LINEAR; break;
+				}
+
+				device->SetRenderState(D3DRS_FOGVERTEXMODE, fogMode);
+				device->SetRenderState(D3DRS_FOGTABLEMODE, fogMode);
+			}
+			return D3D_OK;
+		}
+
+		case D3DLIGHTSTATE_FOGSTART:
+		{
+			float fogStart = *reinterpret_cast<float*>(&value);
+			return device->SetRenderState(D3DRS_FOGSTART, value);
+		}
+
+		case D3DLIGHTSTATE_FOGEND:
+		{
+			float fogEnd = *reinterpret_cast<float*>(&value);
+			return device->SetRenderState(D3DRS_FOGEND, value);
+		}
+
+		case D3DLIGHTSTATE_FOGDENSITY:
+		{
+			float fogDensity = *reinterpret_cast<float*>(&value);
+			return device->SetRenderState(D3DRS_FOGDENSITY, value);
+		}
+
 		default:
-			// Unknown or unused state - ignore safely
+			// Unknown
 			return D3D_OK;
 	}
 }

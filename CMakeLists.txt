@@ -74,6 +74,9 @@ set(TOYDEBUG_SOURCES
     src/ToyDebug/Renderer/Hooks/TexMatHooks.cpp
     src/ToyDebug/Renderer/Hooks/TexMatHooks.hpp
 
+    src/ToyDebug/Renderer/Hooks/MiscHooks.cpp
+    src/ToyDebug/Renderer/Hooks/MiscHooks.hpp
+
     src/ToyDebug/Renderer/Hooks/StubHooks.hpp
 
     src/ToyDebug/ToyTypes.hpp

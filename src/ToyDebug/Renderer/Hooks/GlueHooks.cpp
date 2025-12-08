@@ -2,6 +2,7 @@
 #include "Renderer/RendererCommon.hpp"
 
 #include <d3dtypes.h>
+#include <print>
 
 namespace
 {
@@ -62,7 +63,6 @@ void getDIBPixelColor(BGRA* color, DIBSECTION* dibSection, RGBQUAD* colorTables,
 	}
 }
 
-// TODO: Fix
 bool copyToDDSurface(int32_t texIndex, LPDIRECT3DSURFACE9 d3dSurface)
 {
 	if ( ! texIndex || ! d3dSurface )
@@ -217,34 +217,61 @@ int32_t CON_CDECL hook_GlueSetBackdrop(int32_t textureIndex)
 	pBackBuffer->GetDesc(&backBufferDesc);
 	pBackBuffer->Release();
 
-	LPDIRECT3DTEXTURE9 pTexture = nullptr;
-	HRESULT hr = pDevice->CreateTexture(
+	// Create a system memory surface that we can lock
+	LPDIRECT3DSURFACE9 pSystemSurface = nullptr;
+	HRESULT hr = pDevice->CreateOffscreenPlainSurface(
 	    backBufferDesc.Width,
 	    backBufferDesc.Height,
-	    1,                     // 1 mip level
-	    0,                     // default usage
-	    backBufferDesc.Format, // match back buffer format
-	    D3DPOOL_SYSTEMMEM,     // system memory (replaces DDSCAPS_SYSTEMMEMORY)
-	    &pTexture,
+	    backBufferDesc.Format,
+	    D3DPOOL_SYSTEMMEM, // System memory can be locked
+	    &pSystemSurface,
 	    nullptr
 	);
 
 	if ( FAILED(hr) )
-		return 0;
-
-	LPDIRECT3DSURFACE9 pSurface = nullptr;
-	pTexture->GetSurfaceLevel(0, &pSurface);
-
-	// Copy bitmap data to the texture surface
-	if ( ! copyToDDSurface(l_texIndex, pSurface) )
 	{
-		pTexture->Release();
+		std::printf("Failed to create system surface -> 0x%X\n", hr);
 		return 0;
 	}
 
-	pTexture->Release(); // Surface keeps its own reference
+	// Copy bitmap data to the system memory surface
+	if ( ! copyToDDSurface(l_texIndex, pSystemSurface) )
+	{
+		pSystemSurface->Release();
+		return 0;
+	}
 
-	g_backdrop = pSurface;
+	// Now create the final DEFAULT pool surface for StretchRect
+	LPDIRECT3DSURFACE9 pDefaultSurface = nullptr;
+	hr = pDevice->CreateOffscreenPlainSurface(
+	    backBufferDesc.Width,
+	    backBufferDesc.Height,
+	    backBufferDesc.Format,
+	    D3DPOOL_DEFAULT,
+	    &pDefaultSurface,
+	    nullptr
+	);
+
+	if ( FAILED(hr) )
+	{
+		std::printf("Failed to create default surface -> 0x%X\n", hr);
+		pSystemSurface->Release();
+		return 0;
+	}
+
+	// Copy from system memory to video memory using UpdateSurface
+	hr = pDevice->UpdateSurface(pSystemSurface, nullptr, pDefaultSurface, nullptr);
+
+	pSystemSurface->Release(); // Done with system memory surface
+
+	if ( FAILED(hr) )
+	{
+		std::printf("Failed UpdateSurface -> 0x%X\n", hr);
+		pDefaultSurface->Release();
+		return 0;
+	}
+
+	g_backdrop = pDefaultSurface;
 
 	return 1;
 }

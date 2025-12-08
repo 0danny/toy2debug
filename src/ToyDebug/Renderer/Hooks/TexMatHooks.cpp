@@ -5,8 +5,6 @@
 
 HRESULT CON_CDECL hook_CreateMaterial(D3DMATERIAL9** outMaterial)
 {
-	std::printf("Creating new material.\n");
-
 	D3DMATERIAL9* pMaterial = new D3DMATERIAL9;
 	ZeroMemory(pMaterial, sizeof(D3DMATERIAL9));
 
@@ -17,8 +15,6 @@ HRESULT CON_CDECL hook_CreateMaterial(D3DMATERIAL9** outMaterial)
 
 HRESULT CON_CDECL hook_SetMaterial(D3DMATERIAL9* d3dMaterial9, LPD3DMATERIAL d3dMaterial)
 {
-	std::printf("Material %p\n", d3dMaterial);
-
 	d3dMaterial9->Diffuse = d3dMaterial->diffuse;
 	d3dMaterial9->Ambient = d3dMaterial->ambient;
 	d3dMaterial9->Specular = d3dMaterial->specular;
@@ -35,7 +31,7 @@ HRESULT CON_CDECL hook_GetHandle(D3DMATERIAL9* d3dMaterial9, void** d3dMaterialH
 	return D3D_OK;
 }
 
-void CON_CDECL Nu3D_CopyTextureToSurface(Nu3DBmpDataNode* bitmapDataNode)
+void CON_CDECL copyTextureToSurface(Nu3DBmpDataNode* bitmapDataNode)
 {
 	LPDIRECT3DTEXTURE9 pTexture = bitmapDataNode->d3dTexture;
 	if ( ! pTexture || ! bitmapDataNode->texData )
@@ -49,23 +45,22 @@ void CON_CDECL Nu3D_CopyTextureToSurface(Nu3DBmpDataNode* bitmapDataNode)
 	if ( FAILED(pTexture->LockRect(0, &lockedRect, nullptr, 0)) )
 		return;
 
-	const int texWidth = bitmapDataNode->textureWidth;
-	const int texHeight = bitmapDataNode->textureHeight;
+	const int32_t texWidth = bitmapDataNode->textureWidth;
+	const int32_t texHeight = bitmapDataNode->textureHeight;
 
 	const D3DFORMAT fmt = surfaceDesc.Format;
 
-	for ( int y = 0; y < texHeight; ++y )
+	for ( int32_t y = 0; y < texHeight; ++y )
 	{
 		// D3D surfaces are top down, texData is bottom up in the original code
-		int srcY = texHeight - 1 - y;
+		int32_t srcY = texHeight - 1 - y;
 
 		uint8_t* dstRow = (uint8_t*)lockedRect.pBits + y * lockedRect.Pitch;
 
-		for ( int x = 0; x < texWidth; ++x )
+		for ( int32_t x = 0; x < texWidth; ++x )
 		{
 			uint32_t argb = bitmapDataNode->texData[srcY * texWidth + x];
 
-			// If this comes out with swapped channels, try treating it as BGRA instead.
 			uint8_t a = (uint8_t)((argb >> 24) & 0xFF);
 			uint8_t r = (uint8_t)((argb >> 16) & 0xFF);
 			uint8_t g = (uint8_t)((argb >> 8) & 0xFF);
@@ -110,8 +105,6 @@ void CON_CDECL Nu3D_CopyTextureToSurface(Nu3DBmpDataNode* bitmapDataNode)
 	pTexture->UnlockRect(0);
 }
 
-void destroyBmpDataNode() {}
-
 int32_t CON_CDECL hook_InitialiseTextureSurface(Nu3DBmpDataNode* bmpDataNode)
 {
 	uint32_t l_width;
@@ -148,7 +141,7 @@ int32_t CON_CDECL hook_InitialiseTextureSurface(Nu3DBmpDataNode* bmpDataNode)
 	if ( (l_flags & 0xF) != 0 )
 	{
 		// Need alpha channel
-		int minAlphaBits = (l_flags & 1) != 0 ? 4 : 1;
+		int32_t minAlphaBits = (l_flags & 1) != 0 ? 4 : 1;
 
 		if ( minAlphaBits >= 4 )
 			textureFormat = D3DFMT_A4R4G4B4; // 4-bit alpha
@@ -185,7 +178,7 @@ int32_t CON_CDECL hook_InitialiseTextureSurface(Nu3DBmpDataNode* bmpDataNode)
 	l_texData = bmpDataNode->texData;
 
 	if ( l_texData )
-		Nu3D_CopyTextureToSurface(bmpDataNode);
+		copyTextureToSurface(bmpDataNode);
 
 	return 1;
 }
