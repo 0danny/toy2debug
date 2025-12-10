@@ -7,7 +7,7 @@
 
 HRESULT CON_CDECL hook_ReleaseVertexBuffer(LPDIRECT3DVERTEXBUFFER9 buffer)
 {
-	if ( buffer )
+	if (buffer)
 		return buffer->Release();
 
 	return D3D_OK;
@@ -27,7 +27,7 @@ HRESULT CON_CDECL hook_CreateVertexBuffer(D3DVERTEXBUFFERDESC* desc, LPDIRECT3DV
 
 HRESULT CON_CDECL hook_LockVertexBuffer(LPDIRECT3DVERTEXBUFFER9 vertexBuffer, DWORD dwFlags, LPVOID* lplpData, DWORD* lpStride)
 {
-	if ( ! vertexBuffer )
+	if (! vertexBuffer)
 		return E_FAIL;
 
 	// In DX9, Lock doesn't return stride - it's determined by the vertex format
@@ -37,13 +37,13 @@ HRESULT CON_CDECL hook_LockVertexBuffer(LPDIRECT3DVERTEXBUFFER9 vertexBuffer, DW
 
 	DWORD dx9Flags = 0;
 
-	if ( dwFlags & 0x800 ) // D3DLOCK_READONLY
+	if (dwFlags & 0x800) // D3DLOCK_READONLY
 		dx9Flags |= D3DLOCK_READONLY;
 
-	if ( dwFlags & 0x1 ) // D3DLOCK_DISCARDCONTENTS or similar
+	if (dwFlags & 0x1) // D3DLOCK_DISCARDCONTENTS or similar
 		dx9Flags |= D3DLOCK_DISCARD;
 
-	if ( dwFlags & 0x2000 ) // D3DLOCK_NOOVERWRITE
+	if (dwFlags & 0x2000) // D3DLOCK_NOOVERWRITE
 		dx9Flags |= D3DLOCK_NOOVERWRITE;
 
 	return vertexBuffer->Lock(offsetToLock, sizeToLock, lplpData, dx9Flags);
@@ -51,7 +51,7 @@ HRESULT CON_CDECL hook_LockVertexBuffer(LPDIRECT3DVERTEXBUFFER9 vertexBuffer, DW
 
 HRESULT CON_CDECL hook_UnlockVertexBuffer(LPDIRECT3DVERTEXBUFFER9 buffer)
 {
-	if ( buffer )
+	if (buffer)
 		return buffer->Unlock();
 
 	return D3D_OK;
@@ -64,26 +64,19 @@ HRESULT CON_CDECL hook_OptimizeVertexBuffer(LPDIRECT3DVERTEXBUFFER9 buffer, void
 }
 
 HRESULT CON_CDECL hook_ProcessVerticesOnBuffer(
-    LPDIRECT3DVERTEXBUFFER9 destBuffer,
-    DWORD dwVertexOp,
-    DWORD dwDestIndex,
-    DWORD dwCount,
-    LPDIRECT3DVERTEXBUFFER9 srcBuffer,
-    DWORD dwSrcIndex,
-    DWORD dwFlags
-)
+	LPDIRECT3DVERTEXBUFFER9 destBuffer, DWORD dwVertexOp, DWORD dwDestIndex, DWORD dwCount, LPDIRECT3DVERTEXBUFFER9 srcBuffer, DWORD dwSrcIndex, DWORD dwFlags)
 {
 	auto* device = RendererCommon::g_framework->pd3dDevice;
 
-	if ( ! device || ! srcBuffer || ! destBuffer || dwCount == 0 )
+	if (! device || ! srcBuffer || ! destBuffer || dwCount == 0)
 		return D3D_OK;
 
-	D3DVERTEXBUFFER_DESC srcDesc{};
-	if ( FAILED(srcBuffer->GetDesc(&srcDesc)) )
+	D3DVERTEXBUFFER_DESC srcDesc {};
+	if (FAILED(srcBuffer->GetDesc(&srcDesc)))
 		return D3D_OK;
 
-	D3DVERTEXBUFFER_DESC destDesc{};
-	if ( FAILED(destBuffer->GetDesc(&destDesc)) )
+	D3DVERTEXBUFFER_DESC destDesc {};
+	if (FAILED(destBuffer->GetDesc(&destDesc)))
 		return D3D_OK;
 
 	uint32_t stride = RendererCommon::getStrideFromFVF(srcDesc.FVF);
@@ -91,13 +84,12 @@ HRESULT CON_CDECL hook_ProcessVerticesOnBuffer(
 	device->SetStreamSource(0, srcBuffer, 0, stride);
 	device->SetFVF(srcDesc.FVF);
 
-	HRESULT result = device->ProcessVertices(
-	    dwSrcIndex,
-	    dwDestIndex,
-	    dwCount,
-	    destBuffer,
-	    nullptr,
-	    0 // must use this flag for clean FFP processing
+	HRESULT result = device->ProcessVertices(dwSrcIndex,
+		dwDestIndex,
+		dwCount,
+		destBuffer,
+		nullptr,
+		0 // must use this flag for clean FFP processing
 	);
 
 	return result;

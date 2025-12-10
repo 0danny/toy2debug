@@ -5,7 +5,8 @@
 class LightsHooks : public Hook
 {
 public:
-	LightsHooks() : Hook("LightsHooks") {};
+	LightsHooks()
+		: Hook("LightsHooks") {};
 
 	bool init() override;
 };

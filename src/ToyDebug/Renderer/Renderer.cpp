@@ -18,7 +18,7 @@
 
 void Renderer::init()
 {
-	if ( MH_Initialize() )
+	if (MH_Initialize())
 	{
 		std::println("[Renderer]: Could not init MinHook.");
 		return;
@@ -37,17 +37,17 @@ void Renderer::init()
 	};
 	// clang-format on
 
-	for ( auto& hook : m_hooks )
+	for (auto& hook : m_hooks)
 	{
 		bool result = hook->init();
 
-		if ( result )
+		if (result)
 			std::println("[Renderer]: Initialised {}", hook->getName());
 		else
 			std::println("[Renderer]: Failed to init some/all hooks in {}", hook->getName());
 	}
 
-	if ( MH_EnableHook(MH_ALL_HOOKS) )
+	if (MH_EnableHook(MH_ALL_HOOKS))
 		std::println("[Renderer]: Could not enable all hooks.");
 }
 

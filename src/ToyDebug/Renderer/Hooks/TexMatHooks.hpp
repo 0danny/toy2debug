@@ -5,7 +5,8 @@
 class TexMatHooks : public Hook
 {
 public:
-	TexMatHooks() : Hook("TextureMaterialHooks") {};
+	TexMatHooks()
+		: Hook("TextureMaterialHooks") {};
 
 	bool init() override;
 };

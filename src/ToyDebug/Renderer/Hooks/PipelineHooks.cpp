@@ -7,18 +7,18 @@ HRESULT CON_CDECL hook_ClearScreen(DWORD clearFlags, D3DCOLOR clearColor)
 {
 	auto* device = RendererCommon::g_framework->pd3dDevice;
 
-	if ( ! device )
+	if (! device)
 		return -1;
 
 	// Convert D3D3 clear flags to DX9 flags
 	DWORD dx9ClearFlags = 0;
 
 	// D3DCLEAR_TARGET = 1 in both D3D3 and DX9
-	if ( clearFlags & D3DCLEAR_TARGET )
+	if (clearFlags & D3DCLEAR_TARGET)
 		dx9ClearFlags |= D3DCLEAR_TARGET;
 
 	// D3DCLEAR_ZBUFFER = 2 in both D3D3 and DX9
-	if ( clearFlags & D3DCLEAR_ZBUFFER )
+	if (clearFlags & D3DCLEAR_ZBUFFER)
 		dx9ClearFlags |= D3DCLEAR_ZBUFFER;
 
 	typedef RECT*(CON_CDECL * GetDestRect)();
@@ -26,7 +26,7 @@ HRESULT CON_CDECL hook_ClearScreen(DWORD clearFlags, D3DCOLOR clearColor)
 
 	RECT* l_destRect = getDestRect();
 
-	if ( l_destRect )
+	if (l_destRect)
 	{
 		// Clear specific rectangle
 		D3DRECT d3dRect;
@@ -46,7 +46,7 @@ HRESULT CON_CDECL hook_ClearScreen(DWORD clearFlags, D3DCOLOR clearColor)
 
 HRESULT CON_STDCALL hook_BeginScene()
 {
-	if ( RendererCommon::g_framework->pd3dDevice )
+	if (RendererCommon::g_framework->pd3dDevice)
 		return RendererCommon::g_framework->pd3dDevice->BeginScene();
 	else
 		return -1;
@@ -54,7 +54,7 @@ HRESULT CON_STDCALL hook_BeginScene()
 
 void CON_STDCALL hook_EndScene()
 {
-	if ( RendererCommon::g_framework->pd3dDevice )
+	if (RendererCommon::g_framework->pd3dDevice)
 		RendererCommon::g_framework->pd3dDevice->EndScene();
 }
 
@@ -62,10 +62,10 @@ HRESULT hook_PresentFrame()
 {
 	auto* device = RendererCommon::g_framework->pd3dDevice;
 
-	if ( ! device )
+	if (! device)
 		return E_FAIL;
 
-	if ( RendererCommon::g_framework->bIsFullscreen )
+	if (RendererCommon::g_framework->bIsFullscreen)
 	{
 		// Fullscreen - present everything
 		return device->Present(nullptr, nullptr, nullptr, nullptr);
@@ -73,18 +73,17 @@ HRESULT hook_PresentFrame()
 	else
 	{
 		// Windowed - present with rectangles
-		return device->Present(
-		    &RendererCommon::g_framework->rcViewportRect, // source rect
-		    &RendererCommon::g_framework->rcScreenRect,   // dest rect
-		    nullptr,                                      // dest window (nullptr = use device window)
-		    nullptr                                       // dirty region
+		return device->Present(&RendererCommon::g_framework->rcViewportRect, // source rect
+			&RendererCommon::g_framework->rcScreenRect, // dest rect
+			nullptr, // dest window (nullptr = use device window)
+			nullptr // dirty region
 		);
 	}
 }
 
 int32_t CON_CDECL hook_SetViewport(D3DVIEWPORT2* viewport)
 {
-	if ( ! RendererCommon::g_framework->pd3dDevice )
+	if (! RendererCommon::g_framework->pd3dDevice)
 		return -1;
 
 	// Convert D3DVIEWPORT2 to D3DVIEWPORT9
@@ -103,10 +102,7 @@ int32_t CON_CDECL hook_SetViewport(D3DVIEWPORT2* viewport)
 
 HRESULT hook_SetViewTransform(const D3DMATRIX* pMatrix) { return RendererCommon::g_framework->pd3dDevice->SetTransform(D3DTS_VIEW, pMatrix); }
 
-HRESULT hook_SetProjectionTransform(const D3DMATRIX* pMatrix)
-{
-	return RendererCommon::g_framework->pd3dDevice->SetTransform(D3DTS_PROJECTION, pMatrix);
-}
+HRESULT hook_SetProjectionTransform(const D3DMATRIX* pMatrix) { return RendererCommon::g_framework->pd3dDevice->SetTransform(D3DTS_PROJECTION, pMatrix); }
 
 HRESULT hook_SetWorldTransform(const D3DMATRIX* pMatrix) { return RendererCommon::g_framework->pd3dDevice->SetTransform(D3DTS_WORLD, pMatrix); }
 
@@ -116,52 +112,68 @@ HRESULT CON_CDECL hook_SetRenderState(D3DRENDERSTATETYPE state, DWORD value)
 	auto* device = RendererCommon::g_framework->pd3dDevice;
 
 	auto convertOldBlend = [](int32_t value) -> D3DBLEND {
-		switch ( value )
+		switch (value)
 		{
-			case 1: return D3DBLEND_ZERO;
-			case 2: return D3DBLEND_ONE;
-			case 3: return D3DBLEND_SRCCOLOR;
-			case 4: return D3DBLEND_INVSRCCOLOR;
-			case 5: return D3DBLEND_SRCALPHA;
-			case 6: return D3DBLEND_INVSRCALPHA;
-			case 7: return D3DBLEND_DESTALPHA;
-			case 8: return D3DBLEND_INVDESTALPHA;
-			case 9: return D3DBLEND_DESTCOLOR;
-			case 10: return D3DBLEND_INVDESTCOLOR;
+			case 1:
+				return D3DBLEND_ZERO;
+			case 2:
+				return D3DBLEND_ONE;
+			case 3:
+				return D3DBLEND_SRCCOLOR;
+			case 4:
+				return D3DBLEND_INVSRCCOLOR;
+			case 5:
+				return D3DBLEND_SRCALPHA;
+			case 6:
+				return D3DBLEND_INVSRCALPHA;
+			case 7:
+				return D3DBLEND_DESTALPHA;
+			case 8:
+				return D3DBLEND_INVDESTALPHA;
+			case 9:
+				return D3DBLEND_DESTCOLOR;
+			case 10:
+				return D3DBLEND_INVDESTCOLOR;
 		}
 
 		return D3DBLEND_ONE; // safe fallback
 	};
 
-	switch ( state )
+	switch (state)
 	{
-		case D3DRS_SRCBLEND: return device->SetRenderState(D3DRS_SRCBLEND, convertOldBlend(value));
+		case D3DRS_SRCBLEND:
+			return device->SetRenderState(D3DRS_SRCBLEND, convertOldBlend(value));
 
-		case D3DRS_DESTBLEND: return device->SetRenderState(D3DRS_DESTBLEND, convertOldBlend(value));
+		case D3DRS_DESTBLEND:
+			return device->SetRenderState(D3DRS_DESTBLEND, convertOldBlend(value));
 
-		case D3DRS_ALPHABLENDENABLE: return device->SetRenderState(D3DRS_ALPHABLENDENABLE, value ? TRUE : FALSE);
+		case D3DRS_ALPHABLENDENABLE:
+			return device->SetRenderState(D3DRS_ALPHABLENDENABLE, value ? TRUE : FALSE);
 
-		case D3DRS_ZENABLE: return device->SetRenderState(D3DRS_ZENABLE, value);
+		case D3DRS_ZENABLE:
+			return device->SetRenderState(D3DRS_ZENABLE, value);
 
-		case D3DRS_ZWRITEENABLE: return device->SetRenderState(D3DRS_ZWRITEENABLE, value);
+		case D3DRS_ZWRITEENABLE:
+			return device->SetRenderState(D3DRS_ZWRITEENABLE, value);
 
 		case 21:
 			// 4 = MODULATE
 			// 3 = DECAL (used for font fades)
 			//
-			if ( value == 4 )
+			if (value == 4)
 			{
 				device->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
 				device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
 			}
-			else if ( value == 3 )
+			else if (value == 3)
 			{
 				device->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_BLENDTEXTUREALPHA);
 				device->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
 			}
 			return D3D_OK;
 
-		default: return device->SetRenderState(state, value);
+		default:
+			return device->SetRenderState(state, value);
 	}
 }
 

@@ -10,7 +10,9 @@ class Hook
 public:
 	using SharedPtr = std::shared_ptr<Hook>;
 
-	Hook(const std::string& hookName) : m_hookName(hookName) {};
+	Hook(const std::string& hookName)
+		: m_hookName(hookName) {};
+
 	~Hook() = default;
 
 	virtual bool init() = 0;

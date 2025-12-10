@@ -9,7 +9,7 @@ hook_DrawIndexedPrimitiveVB(D3DPRIMITIVETYPE primitiveType, LPDIRECT3DVERTEXBUFF
 {
 	auto* device = RendererCommon::g_framework->pd3dDevice;
 
-	if ( ! device || ! vertexBuffer )
+	if (! device || ! vertexBuffer)
 		return E_FAIL;
 
 	D3DVERTEXBUFFER_DESC desc;
@@ -22,19 +22,13 @@ hook_DrawIndexedPrimitiveVB(D3DPRIMITIVETYPE primitiveType, LPDIRECT3DVERTEXBUFF
 
 	IDirect3DIndexBuffer9* pIndexBuffer = nullptr;
 	HRESULT hr = device->CreateIndexBuffer(
-	    indexCount * sizeof(WORD),
-	    D3DUSAGE_WRITEONLY | D3DUSAGE_SOFTWAREPROCESSING,
-	    D3DFMT_INDEX16,
-	    D3DPOOL_DEFAULT,
-	    &pIndexBuffer,
-	    nullptr
-	);
+		indexCount * sizeof(WORD), D3DUSAGE_WRITEONLY | D3DUSAGE_SOFTWAREPROCESSING, D3DFMT_INDEX16, D3DPOOL_DEFAULT, &pIndexBuffer, nullptr);
 
-	if ( SUCCEEDED(hr) )
+	if (SUCCEEDED(hr))
 	{
 		void* pData = nullptr;
 
-		if ( SUCCEEDED(pIndexBuffer->Lock(0, 0, &pData, 0)) )
+		if (SUCCEEDED(pIndexBuffer->Lock(0, 0, &pData, 0)))
 		{
 			memcpy(pData, indices, indexCount * sizeof(WORD));
 			pIndexBuffer->Unlock();
@@ -46,13 +40,13 @@ hook_DrawIndexedPrimitiveVB(D3DPRIMITIVETYPE primitiveType, LPDIRECT3DVERTEXBUFF
 		// Calculate primitive count based on type
 		uint32_t primCount = 0;
 
-		if ( primitiveType == D3DPT_TRIANGLELIST )
+		if (primitiveType == D3DPT_TRIANGLELIST)
 			primCount = indexCount / 3;
-		else if ( primitiveType == D3DPT_TRIANGLESTRIP )
+		else if (primitiveType == D3DPT_TRIANGLESTRIP)
 			primCount = indexCount - 2;
-		else if ( primitiveType == D3DPT_LINELIST )
+		else if (primitiveType == D3DPT_LINELIST)
 			primCount = indexCount / 2;
-		else if ( primitiveType == D3DPT_LINESTRIP )
+		else if (primitiveType == D3DPT_LINESTRIP)
 			primCount = indexCount - 1;
 
 		hr = device->DrawIndexedPrimitive(primitiveType, 0, 0, numVertices, 0, primCount);
@@ -64,18 +58,11 @@ hook_DrawIndexedPrimitiveVB(D3DPRIMITIVETYPE primitiveType, LPDIRECT3DVERTEXBUFF
 }
 
 HRESULT CON_CDECL hook_DrawIndexedPrimitive(
-    D3DPRIMITIVETYPE d3dptPrimitiveType,
-    DWORD dwVertexTypeDesc,
-    LPVOID lpvVertices,
-    DWORD dwVertexCount,
-    LPWORD lpwIndices,
-    DWORD dwIndexCount,
-    DWORD dwFlags
-)
+	D3DPRIMITIVETYPE d3dptPrimitiveType, DWORD dwVertexTypeDesc, LPVOID lpvVertices, DWORD dwVertexCount, LPWORD lpwIndices, DWORD dwIndexCount, DWORD dwFlags)
 {
 	auto* device = RendererCommon::g_framework->pd3dDevice;
 
-	if ( ! device )
+	if (! device)
 		return E_FAIL;
 
 	uint32_t vertexStride = RendererCommon::getStrideFromFVF(dwVertexTypeDesc);
@@ -84,17 +71,16 @@ HRESULT CON_CDECL hook_DrawIndexedPrimitive(
 
 	uint32_t primCount = 0;
 
-	if ( d3dptPrimitiveType == D3DPT_TRIANGLELIST )
+	if (d3dptPrimitiveType == D3DPT_TRIANGLELIST)
 		primCount = dwIndexCount / 3;
-	else if ( d3dptPrimitiveType == D3DPT_TRIANGLESTRIP )
+	else if (d3dptPrimitiveType == D3DPT_TRIANGLESTRIP)
 		primCount = dwIndexCount - 2;
-	else if ( d3dptPrimitiveType == D3DPT_LINELIST )
+	else if (d3dptPrimitiveType == D3DPT_LINELIST)
 		primCount = dwIndexCount / 2;
-	else if ( d3dptPrimitiveType == D3DPT_LINESTRIP )
+	else if (d3dptPrimitiveType == D3DPT_LINESTRIP)
 		primCount = dwIndexCount - 1;
 
-	HRESULT result =
-	    device->DrawIndexedPrimitiveUP(d3dptPrimitiveType, 0, dwVertexCount, primCount, lpwIndices, D3DFMT_INDEX16, lpvVertices, vertexStride);
+	HRESULT result = device->DrawIndexedPrimitiveUP(d3dptPrimitiveType, 0, dwVertexCount, primCount, lpwIndices, D3DFMT_INDEX16, lpvVertices, vertexStride);
 
 	return result;
 }
@@ -105,29 +91,40 @@ HRESULT CON_CDECL hook_DrawPrimitive(D3DPRIMITIVETYPE primitiveType, DWORD verte
 
 	uint32_t stride = RendererCommon::getStrideFromFVF(vertexTypeDesc);
 
-	if ( stride == 0 || vertexCount == 0 )
+	if (stride == 0 || vertexCount == 0)
 		return D3D_OK;
 
 	uint32_t primCount = 0;
 
-	switch ( primitiveType )
+	switch (primitiveType)
 	{
-		case D3DPT_TRIANGLELIST: primCount = vertexCount / 3; break;
+		case D3DPT_TRIANGLELIST:
+			primCount = vertexCount / 3;
+			break;
 		case D3DPT_TRIANGLESTRIP:
-		case D3DPT_TRIANGLEFAN: primCount = (vertexCount >= 2) ? (vertexCount - 2) : 0; break;
-		case D3DPT_LINELIST: primCount = vertexCount / 2; break;
-		case D3DPT_LINESTRIP: primCount = (vertexCount >= 1) ? (vertexCount - 1) : 0; break;
-		case D3DPT_POINTLIST: primCount = vertexCount; break;
+		case D3DPT_TRIANGLEFAN:
+			primCount = (vertexCount >= 2) ? (vertexCount - 2) : 0;
+			break;
+		case D3DPT_LINELIST:
+			primCount = vertexCount / 2;
+			break;
+		case D3DPT_LINESTRIP:
+			primCount = (vertexCount >= 1) ? (vertexCount - 1) : 0;
+			break;
+		case D3DPT_POINTLIST:
+			primCount = vertexCount;
+			break;
 
-		default: return D3D_OK;
+		default:
+			return D3D_OK;
 	}
 
-	if ( primCount == 0 )
+	if (primCount == 0)
 		return D3D_OK;
 
 	device->SetFVF(vertexTypeDesc);
 
-	if ( vertexTypeDesc == 0x1C4 && vertexCount > 0 )
+	if (vertexTypeDesc == 0x1C4 && vertexCount > 0)
 	{
 		struct Vertex_0x1C4
 		{
@@ -139,9 +136,9 @@ HRESULT CON_CDECL hook_DrawPrimitive(D3DPRIMITIVETYPE primitiveType, DWORD verte
 
 		Vertex_0x1C4* v = (Vertex_0x1C4*)vertices;
 
-		for ( DWORD i = 0; i < vertexCount; i++ )
+		for (DWORD i = 0; i < vertexCount; i++)
 		{
-			if ( v[i].rhw <= 0.0f )
+			if (v[i].rhw <= 0.0f)
 			{
 				// This primitive is behind the camera, don't draw it
 				return D3D_OK;

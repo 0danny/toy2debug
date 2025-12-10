@@ -10,10 +10,7 @@ namespace
 	inline Renderer g_renderer;
 }
 
-void initRenderer()
-{
-	g_renderer.init();
-}
+void initRenderer() { g_renderer.init(); }
 
 DWORD WINAPI mainThread(LPVOID)
 {
@@ -30,7 +27,7 @@ DWORD WINAPI mainThread(LPVOID)
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID)
 {
-	if ( reason == DLL_PROCESS_ATTACH )
+	if (reason == DLL_PROCESS_ATTACH)
 	{
 		DisableThreadLibraryCalls(hModule);
 		CreateThread(nullptr, 0, mainThread, nullptr, 0, nullptr);

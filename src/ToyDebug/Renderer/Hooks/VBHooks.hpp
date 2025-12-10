@@ -5,7 +5,8 @@
 class VBHooks : public Hook
 {
 public:
-	VBHooks() : Hook("VertexBufferHooks") {};
+	VBHooks()
+		: Hook("VertexBufferHooks") {};
 
 	bool init() override;
 };

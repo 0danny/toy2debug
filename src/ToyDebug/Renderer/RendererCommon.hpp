@@ -31,12 +31,12 @@ namespace RendererCommon
 	*/
 	inline uint32_t getStrideFromFVF(uint32_t fvf)
 	{
-		if ( fvf != 0x112 )
+		if (fvf != 0x112)
 		{
-			if ( fvf == 0x152 )
+			if (fvf == 0x152)
 				return 36;
 
-			if ( fvf != 0x1C4 )
+			if (fvf != 0x1C4)
 				return 0;
 		}
 

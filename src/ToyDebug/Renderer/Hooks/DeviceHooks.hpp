@@ -5,7 +5,8 @@
 class DeviceHooks : public Hook
 {
 public:
-	DeviceHooks() : Hook("DeviceHooks") {};
+	DeviceHooks()
+		: Hook("DeviceHooks") {};
 
 	bool init() override;
 };

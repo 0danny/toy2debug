@@ -34,15 +34,15 @@ HRESULT CON_CDECL hook_GetHandle(D3DMATERIAL9* d3dMaterial9, void** d3dMaterialH
 void CON_CDECL copyTextureToSurface(Nu3DBmpDataNode* bitmapDataNode)
 {
 	LPDIRECT3DTEXTURE9 pTexture = bitmapDataNode->d3dTexture;
-	if ( ! pTexture || ! bitmapDataNode->texData )
+	if (! pTexture || ! bitmapDataNode->texData)
 		return;
 
-	D3DSURFACE_DESC surfaceDesc{};
-	if ( FAILED(pTexture->GetLevelDesc(0, &surfaceDesc)) )
+	D3DSURFACE_DESC surfaceDesc {};
+	if (FAILED(pTexture->GetLevelDesc(0, &surfaceDesc)))
 		return;
 
-	D3DLOCKED_RECT lockedRect{};
-	if ( FAILED(pTexture->LockRect(0, &lockedRect, nullptr, 0)) )
+	D3DLOCKED_RECT lockedRect {};
+	if (FAILED(pTexture->LockRect(0, &lockedRect, nullptr, 0)))
 		return;
 
 	const int32_t texWidth = bitmapDataNode->textureWidth;
@@ -50,14 +50,14 @@ void CON_CDECL copyTextureToSurface(Nu3DBmpDataNode* bitmapDataNode)
 
 	const D3DFORMAT fmt = surfaceDesc.Format;
 
-	for ( int32_t y = 0; y < texHeight; ++y )
+	for (int32_t y = 0; y < texHeight; ++y)
 	{
 		// D3D surfaces are top down, texData is bottom up in the original code
 		int32_t srcY = texHeight - 1 - y;
 
 		uint8_t* dstRow = (uint8_t*)lockedRect.pBits + y * lockedRect.Pitch;
 
-		for ( int32_t x = 0; x < texWidth; ++x )
+		for (int32_t x = 0; x < texWidth; ++x)
 		{
 			uint32_t argb = bitmapDataNode->texData[srcY * texWidth + x];
 
@@ -66,14 +66,14 @@ void CON_CDECL copyTextureToSurface(Nu3DBmpDataNode* bitmapDataNode)
 			uint8_t g = (uint8_t)((argb >> 8) & 0xFF);
 			uint8_t b = (uint8_t)(argb & 0xFF);
 
-			if ( fmt == D3DFMT_A8R8G8B8 || fmt == D3DFMT_X8R8G8B8 )
+			if (fmt == D3DFMT_A8R8G8B8 || fmt == D3DFMT_X8R8G8B8)
 			{
 				uint32_t* dst32 = (uint32_t*)dstRow;
 				uint32_t pixel = ((uint32_t)a << 24) | ((uint32_t)r << 16) | ((uint32_t)g << 8) | ((uint32_t)b);
 
 				dst32[x] = pixel;
 			}
-			else if ( fmt == D3DFMT_A1R5G5B5 )
+			else if (fmt == D3DFMT_A1R5G5B5)
 			{
 				uint16_t* dst16 = (uint16_t*)dstRow;
 
@@ -84,7 +84,7 @@ void CON_CDECL copyTextureToSurface(Nu3DBmpDataNode* bitmapDataNode)
 
 				dst16[x] = (aa << 15) | (rr << 10) | (gg << 5) | bb;
 			}
-			else if ( fmt == D3DFMT_A4R4G4B4 )
+			else if (fmt == D3DFMT_A4R4G4B4)
 			{
 				uint16_t* dst16 = (uint16_t*)dstRow;
 
@@ -112,13 +112,13 @@ int32_t CON_CDECL hook_InitialiseTextureSurface(Nu3DBmpDataNode* bmpDataNode)
 	int32_t l_flags;
 	uint32_t* l_texData;
 
-	if ( (bmpDataNode->flags & 0x40) != 0 )
+	if ((bmpDataNode->flags & 0x40) != 0)
 		return 0;
 
 	auto destroyBmpDataNode = [](Nu3DBmpDataNode* bmpDataNode) {
 		auto l_d3dTexture = bmpDataNode->d3dTexture;
 
-		if ( l_d3dTexture )
+		if (l_d3dTexture)
 		{
 			l_d3dTexture->Release();
 			bmpDataNode->d3dTexture = 0;
@@ -129,7 +129,7 @@ int32_t CON_CDECL hook_InitialiseTextureSurface(Nu3DBmpDataNode* bmpDataNode)
 
 	// Get device caps (DX9 style)
 	D3DCAPS9 l_deviceCaps;
-	if ( FAILED(RendererCommon::g_framework->pd3dDevice->GetDeviceCaps(&l_deviceCaps)) )
+	if (FAILED(RendererCommon::g_framework->pd3dDevice->GetDeviceCaps(&l_deviceCaps)))
 		return 0;
 
 	l_width = bmpDataNode->textureWidth;
@@ -138,30 +138,28 @@ int32_t CON_CDECL hook_InitialiseTextureSurface(Nu3DBmpDataNode* bmpDataNode)
 
 	D3DFORMAT textureFormat = D3DFMT_X8R8G8B8; // Default: no alpha
 
-	if ( (l_flags & 0xF) != 0 )
+	if ((l_flags & 0xF) != 0)
 	{
 		// Need alpha channel
 		int32_t minAlphaBits = (l_flags & 1) != 0 ? 4 : 1;
 
-		if ( minAlphaBits >= 4 )
+		if (minAlphaBits >= 4)
 			textureFormat = D3DFMT_A4R4G4B4; // 4-bit alpha
 		else
 			textureFormat = D3DFMT_A1R5G5B5; // 1-bit alpha
 	}
 
 	LPDIRECT3DTEXTURE9 pTexture = nullptr;
-	HRESULT hr = RendererCommon::g_framework->pd3dDevice->CreateTexture(
-	    l_width,
-	    l_height,
-	    1, // mip levels (1 = no mipmaps)
-	    0, // usage
-	    textureFormat,
-	    D3DPOOL_MANAGED, // managed pool for easy access
-	    &pTexture,
-	    nullptr
-	);
+	HRESULT hr = RendererCommon::g_framework->pd3dDevice->CreateTexture(l_width,
+		l_height,
+		1, // mip levels (1 = no mipmaps)
+		0, // usage
+		textureFormat,
+		D3DPOOL_MANAGED, // managed pool for easy access
+		&pTexture,
+		nullptr);
 
-	if ( FAILED(hr) || ! pTexture )
+	if (FAILED(hr) || ! pTexture)
 		return 0;
 
 	// Store texture pointer (replaces surface and d3dTexture)
@@ -169,7 +167,7 @@ int32_t CON_CDECL hook_InitialiseTextureSurface(Nu3DBmpDataNode* bmpDataNode)
 	bmpDataNode->surface = nullptr; // Not used in DX9
 
 	D3DSURFACE_DESC surfaceDesc;
-	if ( SUCCEEDED(pTexture->GetLevelDesc(0, &surfaceDesc)) )
+	if (SUCCEEDED(pTexture->GetLevelDesc(0, &surfaceDesc)))
 	{
 		bmpDataNode->surfaceDesc.dwWidth = surfaceDesc.Width;
 		bmpDataNode->surfaceDesc.dwHeight = surfaceDesc.Height;
@@ -177,7 +175,7 @@ int32_t CON_CDECL hook_InitialiseTextureSurface(Nu3DBmpDataNode* bmpDataNode)
 
 	l_texData = bmpDataNode->texData;
 
-	if ( l_texData )
+	if (l_texData)
 		copyTextureToSurface(bmpDataNode);
 
 	return 1;
@@ -185,7 +183,7 @@ int32_t CON_CDECL hook_InitialiseTextureSurface(Nu3DBmpDataNode* bmpDataNode)
 
 HRESULT hook_SetTexture(int32_t stageIndex, Nu3DBmpDataNode* bmpDataNode)
 {
-	if ( bmpDataNode )
+	if (bmpDataNode)
 		return RendererCommon::g_framework->pd3dDevice->SetTexture(stageIndex, bmpDataNode->d3dTexture);
 
 	return RendererCommon::g_framework->pd3dDevice->SetTexture(stageIndex, nullptr);

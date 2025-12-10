@@ -12,15 +12,15 @@ int32_t WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdL
 	Renderer renderer(hInstance);
 
 	renderer.init();
-	renderer.run(); //blocking
+	renderer.run(); // blocking
 
 	std::println("[Toy2Debug Loader - Danny]");
 
 	// get full path, injector needs absolutes
 	auto dllPath = std::filesystem::absolute("toydebug.dll");
 
-	STARTUPINFOA si{};
-	PROCESS_INFORMATION pi{};
+	STARTUPINFOA si {};
+	PROCESS_INFORMATION pi {};
 	si.cb = sizeof(si);
 
 	std::string hardcodedPath = "!";
@@ -28,7 +28,7 @@ int32_t WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdL
 	std::string workingDir = exePath.parent_path().string();
 
 	// create suspended
-	if ( ! CreateProcessA(hardcodedPath.c_str(), nullptr, nullptr, nullptr, false, CREATE_SUSPENDED, nullptr, workingDir.c_str(), &si, &pi) )
+	if (! CreateProcessA(hardcodedPath.c_str(), nullptr, nullptr, nullptr, false, CREATE_SUSPENDED, nullptr, workingDir.c_str(), &si, &pi))
 	{
 		std::println("[Main]: Failed to start process suspended.");
 		return -1;
@@ -37,7 +37,7 @@ int32_t WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdL
 	std::println("[Main]: Process started suspended.");
 
 	// inject into the suspended process
-	if ( ! Injector::Inject(pi.dwProcessId, dllPath.string()) )
+	if (! Injector::Inject(pi.dwProcessId, dllPath.string()))
 	{
 		std::println("[Main]: Failed to inject dll.");
 		TerminateProcess(pi.hProcess, 0);

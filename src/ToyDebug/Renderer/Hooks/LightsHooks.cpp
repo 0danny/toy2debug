@@ -18,12 +18,12 @@ namespace
 
 HRESULT CON_CDECL hook_SetLightState(D3DLIGHTSTATETYPE lightState, DWORD value)
 {
-	if ( ! RendererCommon::g_framework || ! RendererCommon::g_framework->pd3dDevice )
+	if (! RendererCommon::g_framework || ! RendererCommon::g_framework->pd3dDevice)
 		return E_FAIL;
 
 	auto* device = RendererCommon::g_framework->pd3dDevice;
 
-	switch ( lightState )
+	switch (lightState)
 	{
 		case D3DLIGHTSTATE_AMBIENT:
 			// Global ambient colour
@@ -33,9 +33,8 @@ HRESULT CON_CDECL hook_SetLightState(D3DLIGHTSTATETYPE lightState, DWORD value)
 			// Use vertex colours in lighting
 			return device->SetRenderState(D3DRS_COLORVERTEX, value ? TRUE : FALSE);
 
-		case D3DLIGHTSTATE_MATERIAL:
-		{
-			if ( value == 0 )
+		case D3DLIGHTSTATE_MATERIAL: {
+			if (value == 0)
 			{
 				device->SetRenderState(D3DRS_LIGHTING, FALSE);
 				return D3D_OK;
@@ -46,10 +45,9 @@ HRESULT CON_CDECL hook_SetLightState(D3DLIGHTSTATETYPE lightState, DWORD value)
 			return device->SetMaterial(mat);
 		}
 
-		case D3DLIGHTSTATE_FOGMODE:
-		{
+		case D3DLIGHTSTATE_FOGMODE: {
 			// Convert D3D3 fog modes to D3D9
-			if ( value == 0 )
+			if (value == 0)
 			{
 				device->SetRenderState(D3DRS_FOGENABLE, FALSE);
 			}
@@ -58,12 +56,20 @@ HRESULT CON_CDECL hook_SetLightState(D3DLIGHTSTATETYPE lightState, DWORD value)
 				device->SetRenderState(D3DRS_FOGENABLE, TRUE);
 
 				D3DFOGMODE fogMode;
-				switch ( value )
+				switch (value)
 				{
-					case 1: fogMode = D3DFOG_EXP; break;
-					case 2: fogMode = D3DFOG_EXP2; break;
-					case 3: fogMode = D3DFOG_LINEAR; break;
-					default: fogMode = D3DFOG_LINEAR; break;
+					case 1:
+						fogMode = D3DFOG_EXP;
+						break;
+					case 2:
+						fogMode = D3DFOG_EXP2;
+						break;
+					case 3:
+						fogMode = D3DFOG_LINEAR;
+						break;
+					default:
+						fogMode = D3DFOG_LINEAR;
+						break;
 				}
 
 				device->SetRenderState(D3DRS_FOGVERTEXMODE, fogMode);
@@ -72,20 +78,17 @@ HRESULT CON_CDECL hook_SetLightState(D3DLIGHTSTATETYPE lightState, DWORD value)
 			return D3D_OK;
 		}
 
-		case D3DLIGHTSTATE_FOGSTART:
-		{
+		case D3DLIGHTSTATE_FOGSTART: {
 			float fogStart = *reinterpret_cast<float*>(&value);
 			return device->SetRenderState(D3DRS_FOGSTART, value);
 		}
 
-		case D3DLIGHTSTATE_FOGEND:
-		{
+		case D3DLIGHTSTATE_FOGEND: {
 			float fogEnd = *reinterpret_cast<float*>(&value);
 			return device->SetRenderState(D3DRS_FOGEND, value);
 		}
 
-		case D3DLIGHTSTATE_FOGDENSITY:
-		{
+		case D3DLIGHTSTATE_FOGDENSITY: {
 			float fogDensity = *reinterpret_cast<float*>(&value);
 			return device->SetRenderState(D3DRS_FOGDENSITY, value);
 		}
@@ -98,7 +101,7 @@ HRESULT CON_CDECL hook_SetLightState(D3DLIGHTSTATETYPE lightState, DWORD value)
 
 HRESULT CON_CDECL hook_CreateLight(NuLight9** lpNuLight)
 {
-	if ( ! lpNuLight )
+	if (! lpNuLight)
 		return E_INVALIDARG;
 
 	NuLight9* light = new NuLight9;
@@ -116,7 +119,7 @@ HRESULT CON_CDECL hook_CreateLight(NuLight9** lpNuLight)
 
 HRESULT CON_CDECL hook_SetLight(NuLight9* nuLight, D3DLIGHT* d3dLight)
 {
-	if ( ! nuLight || ! d3dLight )
+	if (! nuLight || ! d3dLight)
 		return E_INVALIDARG;
 
 	ZeroMemory(&nuLight->light, sizeof(D3DLIGHT9));
@@ -143,19 +146,19 @@ HRESULT CON_CDECL hook_SetLight(NuLight9* nuLight, D3DLIGHT* d3dLight)
 
 HRESULT CON_CDECL hook_AddLight(NuLight9* nuLight)
 {
-	if ( ! nuLight || ! RendererCommon::g_framework || ! RendererCommon::g_framework->pd3dDevice )
+	if (! nuLight || ! RendererCommon::g_framework || ! RendererCommon::g_framework->pd3dDevice)
 		return E_FAIL;
 
 	auto* device = RendererCommon::g_framework->pd3dDevice;
 
 	// Assign an index if we do not have one yet
-	if ( nuLight->index < 0 )
+	if (nuLight->index < 0)
 	{
 		D3DCAPS9 caps;
 
 		uint32_t maxLights = 8;
 
-		if ( SUCCEEDED(device->GetDeviceCaps(&caps)) )
+		if (SUCCEEDED(device->GetDeviceCaps(&caps)))
 			maxLights = caps.MaxActiveLights;
 
 		nuLight->index = static_cast<int32_t>(g_nextLightIndex++ % maxLights);
@@ -163,7 +166,7 @@ HRESULT CON_CDECL hook_AddLight(NuLight9* nuLight)
 
 	HRESULT hr = device->SetLight(nuLight->index, &nuLight->light);
 
-	if ( FAILED(hr) )
+	if (FAILED(hr))
 		return hr;
 
 	hr = device->LightEnable(nuLight->index, TRUE);

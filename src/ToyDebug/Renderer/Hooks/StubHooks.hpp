@@ -5,7 +5,8 @@
 class StubHooks : public Hook
 {
 public:
-	StubHooks() : Hook("StubHooks") {};
+	StubHooks()
+		: Hook("StubHooks") {};
 
 	bool init() override
 	{

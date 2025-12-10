@@ -7,6 +7,5 @@ bool MiscHooks::init()
 	// Init Hooks
 	bool result = false;
 
-
 	return result;
 }

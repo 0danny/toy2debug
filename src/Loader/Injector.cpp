@@ -9,7 +9,7 @@ namespace Injector
 	{
 		int32_t processId = InjectorUtils::GetProcessIdByName(processName);
 
-		if ( processId == 0 )
+		if (processId == 0)
 		{
 			std::println("[Injector]: Could not find process, ensure its running.");
 			return false;
@@ -25,7 +25,7 @@ namespace Injector
 		// Open target process with required permissions
 		HANDLE hProcess = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ, FALSE, processId);
 
-		if ( ! hProcess )
+		if (! hProcess)
 		{
 			std::println("[Injector]: Failed to open process. Error: {}", GetLastError());
 			return false;
@@ -35,7 +35,7 @@ namespace Injector
 		size_t pathSize = dllPath.length() + 1;
 		LPVOID pRemotePath = VirtualAllocEx(hProcess, NULL, pathSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
-		if ( ! pRemotePath )
+		if (! pRemotePath)
 		{
 			std::println("[Injector]: Failed to allocate memory. Error: {}", GetLastError());
 			CloseHandle(hProcess);
@@ -43,7 +43,7 @@ namespace Injector
 		}
 
 		// Write DLL path to allocated memory
-		if ( ! WriteProcessMemory(hProcess, pRemotePath, dllPath.c_str(), pathSize, NULL) )
+		if (! WriteProcessMemory(hProcess, pRemotePath, dllPath.c_str(), pathSize, NULL))
 		{
 			std::println("[Injector]: Failed to write memory. Error: {}", GetLastError());
 			VirtualFreeEx(hProcess, pRemotePath, 0, MEM_RELEASE);
@@ -54,7 +54,7 @@ namespace Injector
 		// Get address of LoadLibraryA
 		LPVOID pLoadLibrary = (LPVOID)GetProcAddress(GetModuleHandleA("kernel32.dll"), "LoadLibraryA");
 
-		if ( ! pLoadLibrary )
+		if (! pLoadLibrary)
 		{
 			std::println("[Injector]: Failed to get LoadLibraryA address");
 			VirtualFreeEx(hProcess, pRemotePath, 0, MEM_RELEASE);
@@ -65,7 +65,7 @@ namespace Injector
 		// Create remote thread to load the DLL
 		HANDLE hThread = CreateRemoteThread(hProcess, NULL, 0, (LPTHREAD_START_ROUTINE)pLoadLibrary, pRemotePath, 0, NULL);
 
-		if ( ! hThread )
+		if (! hThread)
 		{
 			std::println("[Injector]: Failed to create remote thread. Error: ", GetLastError());
 			VirtualFreeEx(hProcess, pRemotePath, 0, MEM_RELEASE);

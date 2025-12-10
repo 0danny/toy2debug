@@ -1,8 +1,8 @@
 #pragma once
 
-#include <windows.h>
 #include <cstdio>
 #include <print>
+#include <windows.h>
 
 namespace Utils
 {

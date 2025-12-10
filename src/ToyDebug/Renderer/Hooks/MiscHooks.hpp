@@ -5,7 +5,8 @@
 class MiscHooks : public Hook
 {
 public:
-	MiscHooks() : Hook("MiscHooks") {};
+	MiscHooks()
+		: Hook("MiscHooks") {};
 
 	bool init() override;
 };

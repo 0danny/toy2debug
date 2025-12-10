@@ -61,7 +61,7 @@ def run_build(launch_app, build_type):
         exe_path = os.path.join(output_folder, get_executable_name())
 
         print(f"----------------- Starting {PROJECT_NAME} -----------------")
-        subprocess.Popen([exe_path], cwd=output_folder)
+        subprocess.run([exe_path], cwd=output_folder)
 
 def main():
     parser = argparse.ArgumentParser(

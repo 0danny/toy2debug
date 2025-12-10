@@ -5,7 +5,8 @@
 class GlueHooks : public Hook
 {
 public:
-	GlueHooks() : Hook("GlueHooks") {};
+	GlueHooks()
+		: Hook("GlueHooks") {};
 
 	bool init() override;
 };

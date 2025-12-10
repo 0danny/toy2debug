@@ -7,7 +7,8 @@
 class Renderer final
 {
 public:
-	explicit Renderer(HINSTANCE hInstance) : m_hInstance(hInstance) {};
+	explicit Renderer(HINSTANCE hInstance)
+		: m_hInstance(hInstance) {};
 
 	int32_t init();
 	void run();

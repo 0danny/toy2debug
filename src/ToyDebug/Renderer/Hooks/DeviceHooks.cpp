@@ -8,7 +8,7 @@ static bool hardcodeRes = true;
 // All of the hooks for building our modified drawing device are located here
 void setWindowSize(CD3DFramework* framework, DDAppDisplayMode* displayMode, uint8_t flags)
 {
-	if ( (flags & 1) != 0 )
+	if ((flags & 1) != 0)
 	{
 		// Fullscreen mode
 		SetRect(&framework->rcViewportRect, 0, 0, displayMode->surfaceDesc.dwWidth, displayMode->surfaceDesc.dwHeight);
@@ -19,7 +19,7 @@ void setWindowSize(CD3DFramework* framework, DDAppDisplayMode* displayMode, uint
 	}
 	else
 	{
-		if ( hardcodeRes )
+		if (hardcodeRes)
 		{
 			std::println("[Debug]: Hardcoding resolution to 1600x900\n");
 			SetRect(&framework->rcViewportRect, 0, 0, 1600, 900);
@@ -46,13 +46,13 @@ void setWindowSize(CD3DFramework* framework, DDAppDisplayMode* displayMode, uint
 void setCapabilities(CD3DFramework* framework)
 {
 	framework->ddDeviceDesc.dpcTriCaps.dwShadeCaps = 0x4000 // alpha blending supported
-	    | 0x8000                                            // alpha gouraud
-	    | 0x40                                              // color gouraud
-	    | 0x20;                                             // color flat
+		| 0x8000 // alpha gouraud
+		| 0x40 // color gouraud
+		| 0x20; // color flat
 
 	framework->ddDeviceDesc.dpcTriCaps.dwDestBlendCaps = 0x0002 // D3DBLEND_ONE
-	    | 0x0008                                                // D3DBLEND_INVSRCALPHA
-	    | 0x0040;                                               // SRCALPHA
+		| 0x0008 // D3DBLEND_INVSRCALPHA
+		| 0x0040; // SRCALPHA
 
 	framework->ddDeviceDesc.dpcTriCaps.dwSrcBlendCaps = 0x0001 | 0x0002 | 0x0020 | 0x0040;
 	framework->ddDeviceDesc.dwTextureOpCaps = 0x1 | 0x4;
@@ -90,7 +90,7 @@ int32_t createD3DDevice(CD3DFramework* framework)
         &framework->pd3dDevice);
 	// clang-format on
 
-	if ( FAILED(hr) )
+	if (FAILED(hr))
 		return false;
 
 	// Get back buffer reference
@@ -102,7 +102,7 @@ int32_t createD3DDevice(CD3DFramework* framework)
 	// Set render target
 	framework->pddsRenderTarget = framework->pddsBackBuffer;
 
-	if ( framework->pddsRenderTarget )
+	if (framework->pddsRenderTarget)
 		framework->pddsRenderTarget->AddRef();
 
 	return true;
@@ -121,21 +121,13 @@ int32_t createAndSetViewport(CD3DFramework* framework)
 	return SUCCEEDED(framework->pd3dDevice->SetViewport(&vp));
 }
 
-HRESULT CON_FASTCALL hook_InitalizeForWindow(
-    CD3DFramework* framework,
-    void* EDX,
-    HWND hwnd,
-    GUID* ddAppGuid,
-    DDAppDevice* appDevice,
-    DDAppDisplayMode* displayMode,
-    uint8_t flags
-)
+HRESULT CON_FASTCALL hook_InitalizeForWindow(CD3DFramework* framework, void* EDX, HWND hwnd, GUID* ddAppGuid, DDAppDevice* appDevice, DDAppDisplayMode* displayMode, uint8_t flags)
 {
 	std::println("[DeviceHooks]: InitializeForWindow!");
 
 	RendererCommon::g_framework = framework;
 
-	if ( ! hwnd || (! displayMode && (flags & 1) != 0) )
+	if (! hwnd || (! displayMode && (flags & 1) != 0))
 		return DDERR_INVALIDPARAMS;
 
 	flags &= ~0x1; // Clear bit 0 to disable fullscreen
@@ -144,7 +136,7 @@ HRESULT CON_FASTCALL hook_InitalizeForWindow(
 	framework->bIsFullscreen = flags & 1;
 	framework->pDD = Direct3DCreate9(D3D_SDK_VERSION);
 
-	if ( ! framework->pDD )
+	if (! framework->pDD)
 		return E_FAIL;
 
 	std::println("[DeviceHooks]: Created Direct3D9 object!");
@@ -154,17 +146,17 @@ HRESULT CON_FASTCALL hook_InitalizeForWindow(
 
 	int32_t result = createD3DDevice(framework);
 
-	if ( ! result )
+	if (! result)
 		return E_FAIL;
 
 	std::println("[DeviceHooks]: Created D3D Device!");
 
 	result = createAndSetViewport(framework);
 
-	if ( ! result )
+	if (! result)
 		return E_FAIL;
 
-	if ( framework->initialized )
+	if (framework->initialized)
 		return E_FAIL;
 
 	framework->slots[0].width = framework->dwRenderWidth;
@@ -176,7 +168,7 @@ HRESULT CON_FASTCALL hook_InitalizeForWindow(
 	framework->initialized = 1;
 
 	// GIVE US OUR WINDOW BACK!
-	if ( ! framework->bIsFullscreen )
+	if (! framework->bIsFullscreen)
 	{
 		LONG style = GetWindowLong(framework->hWnd, GWL_STYLE);
 
@@ -191,7 +183,7 @@ HRESULT CON_FASTCALL hook_InitalizeForWindow(
 		SetWindowPos(framework->hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
 		// correct sized window for the client area
-		RECT r{};
+		RECT r {};
 		r.left = 0;
 		r.top = 0;
 		r.right = framework->dwRenderWidth;

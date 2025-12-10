@@ -8,7 +8,8 @@ class Tab
 public:
 	using SharedPtr = std::shared_ptr<Tab>;
 
-	Tab(std::string tabName) : m_tabName(tabName) {};
+	Tab(std::string tabName)
+		: m_tabName(tabName) {};
 
 	virtual void render() = 0;
 

@@ -5,7 +5,8 @@
 class PipelineHooks : public Hook
 {
 public:
-	PipelineHooks() : Hook("PipelineHooks") {};
+	PipelineHooks()
+		: Hook("PipelineHooks") {};
 
 	bool init() override;
 };

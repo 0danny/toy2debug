@@ -5,7 +5,8 @@
 class DrawHooks : public Hook
 {
 public:
-	DrawHooks() : Hook("DrawHooks") {};
+	DrawHooks()
+		: Hook("DrawHooks") {};
 
 	bool init() override;
 };
