@@ -12,14 +12,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/ToyDebug)
 
 set(IMGUI_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/external/include/ImGui)
 
-# Build the loader
-add_executable(loader 
-    src/Loader/Injector.hpp
-    src/Loader/Injector.cpp
-
-    src/Loader/Main.cpp
-)
-
 # Build ImGui in statically
 set(IMGUI_SOURCES
     ${IMGUI_FOLDER}/imconfig.h
@@ -35,6 +27,7 @@ set(IMGUI_SOURCES
 
     ${IMGUI_FOLDER}/imgui_impl_win32.cpp
     ${IMGUI_FOLDER}/imgui_impl_win32.h
+    ${IMGUI_FOLDER}/imgui_wndproc_wrapper.h
 
     ${IMGUI_FOLDER}/imgui_tables.cpp
     ${IMGUI_FOLDER}/imgui_widgets.cpp
@@ -45,7 +38,30 @@ set(IMGUI_SOURCES
     ${IMGUI_FOLDER}/imstb_truetype.h
 )
 
-# ToyDebug Sources
+set(LOADER_SOURCES
+    src/Loader/Injector.hpp
+    src/Loader/Injector.cpp
+    src/Loader/InjectorUtils.hpp
+
+    src/Loader/Renderer.cpp
+    src/Loader/Renderer.cpp
+
+    src/Loader/Mapper.cpp
+    src/Loader/Mapper.hpp
+
+    src/Loader/Tabs/Tab.hpp
+
+    src/Loader/Main.cpp
+)
+
+# Build the loader
+add_executable(loader WIN32
+    ${IMGUI_SOURCES}
+    ${LOADER_SOURCES}
+)
+
+target_link_libraries(loader PRIVATE d3d9 ddraw)
+
 set(TOYDEBUG_SOURCES
     src/ToyDebug/Main.cpp
 

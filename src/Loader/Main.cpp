@@ -4,9 +4,16 @@
 #include <windows.h>
 
 #include "Injector.hpp"
+#include "Renderer.hpp"
+#include "Mapper.hpp"
 
-int32_t main()
+int32_t WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine, int32_t nCmdShow)
 {
+	Renderer renderer(hInstance);
+
+	renderer.init();
+	renderer.run(); //blocking
+
 	std::println("[Toy2Debug Loader - Danny]");
 
 	// get full path, injector needs absolutes
@@ -16,26 +23,12 @@ int32_t main()
 	PROCESS_INFORMATION pi{};
 	si.cb = sizeof(si);
 
-    static std::string hardcodedPath =
-        "C:\\Users\\danny\\Desktop\\Main Items\\Projects\\toystory2-decomp\\Install\\toy2_nomovies.exe";
-
-    // working directory = directory containing the exe
-    std::filesystem::path exePath(hardcodedPath);
-    std::string workingDir = exePath.parent_path().string();
+	std::string hardcodedPath = "!";
+	std::filesystem::path exePath(hardcodedPath);
+	std::string workingDir = exePath.parent_path().string();
 
 	// create suspended
-	if ( ! CreateProcessA(
-	         hardcodedPath.c_str(),
-	         nullptr,
-	         nullptr,
-	         nullptr,
-	         false,
-	         CREATE_SUSPENDED,
-	         nullptr,
-	         workingDir.c_str(),
-	         &si,
-	         &pi
-	     ) )
+	if ( ! CreateProcessA(hardcodedPath.c_str(), nullptr, nullptr, nullptr, false, CREATE_SUSPENDED, nullptr, workingDir.c_str(), &si, &pi) )
 	{
 		std::println("[Main]: Failed to start process suspended.");
 		return -1;
