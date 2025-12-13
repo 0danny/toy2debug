@@ -20,8 +20,8 @@ LRESULT WINAPI windowWndProc(HWND hWnd, uint32_t msg, WPARAM wParam, LPARAM lPar
 				DWORD exStyle = GetWindowLong(hWnd, GWL_EXSTYLE);
 				AdjustWindowRectEx(&windowRect, style, GetMenu(hWnd) != nullptr, exStyle);
 
-				int windowWidth = windowRect.right - windowRect.left;
-				int windowHeight = windowRect.bottom - windowRect.top;
+				int32_t windowWidth = windowRect.right - windowRect.left;
+				int32_t windowHeight = windowRect.bottom - windowRect.top;
 
 				mmi->ptMinTrackSize.x = windowWidth;
 				mmi->ptMinTrackSize.y = windowHeight;
@@ -31,17 +31,6 @@ LRESULT WINAPI windowWndProc(HWND hWnd, uint32_t msg, WPARAM wParam, LPARAM lPar
 			return 0;
 		}
 
-		case WM_SETCURSOR: {
-			// Always show cursor in windowed mode, regardless of hit test
-			if (! g_settings.fullscreen)
-			{
-				SetCursor(LoadCursor(nullptr, IDC_ARROW));
-				ShowCursor(TRUE); // Force cursor visible
-				return TRUE;
-			}
-			break;
-		}
-
 		case WM_MOVE: {
 			if (! g_settings.fullscreen)
 			{
@@ -49,22 +38,14 @@ LRESULT WINAPI windowWndProc(HWND hWnd, uint32_t msg, WPARAM wParam, LPARAM lPar
 
 				if (framework && framework->hWnd == hWnd)
 				{
-					// Update screen rect to new window position
 					GetClientRect(hWnd, &framework->rcScreenRect);
 					ClientToScreen(hWnd, (LPPOINT)&framework->rcScreenRect);
 					ClientToScreen(hWnd, (LPPOINT)&framework->rcScreenRect.right);
 
-					// Also update viewport rect
 					GetClientRect(hWnd, &framework->rcViewportRect);
 				}
 			}
 			break;
-		}
-
-		case WM_SIZE: {
-			// Don't process size changes during mode changes
-			// Just acknowledge it
-			return 0;
 		}
 
 		case WM_PAINT: {
@@ -74,26 +55,13 @@ LRESULT WINAPI windowWndProc(HWND hWnd, uint32_t msg, WPARAM wParam, LPARAM lPar
 			return 0;
 		}
 
-		case WM_ACTIVATEAPP: {
-			// Track if app is active (game might check this)
-			// Could set a flag here if needed
-			return 0;
-		}
-
-		case WM_ACTIVATE: {
-			// Handle palette if needed (probably not for modern systems)
-			return 0;
-		}
-
 		case WM_DESTROY:
 		case WM_NCDESTROY: {
-			// Mark that window is exiting
 			WindowData* wndData = (WindowData*)MAP_ADDRESS(0x134488);
 			wndData->wndIsExiting = 1;
 			break;
 		}
 
-		// Let these through to default handler
 		case WM_NCPAINT:
 		case WM_NCACTIVATE:
 		case WM_MOVING:
@@ -112,7 +80,7 @@ int32_t CON_STDCALL hook_BuildWindow()
 
 	CoInitialize(0);
 
-	constexpr char kClassName[] = "Toy2";
+	constexpr char kClassName[] = "Toy2Debug - Toy Story 2: Buzz Lightyear to the Rescue";
 
 	wndData->wndClass.style = CS_VREDRAW | CS_HREDRAW | CS_DBLCLKS;
 	wndData->wndClass.lpfnWndProc = windowWndProc;
@@ -127,7 +95,7 @@ int32_t CON_STDCALL hook_BuildWindow()
 	if (! RegisterClassExA(&wndData->wndClass))
 	{
 		constexpr DWORD formatFlags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM;
-		char* buffer;
+		char* buffer = nullptr;
 
 		FormatMessageA(formatFlags, 0, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buffer, 0, 0);
 		MessageBoxA(0, buffer, "GetLastError", MB_ICONINFORMATION | MB_OK);
@@ -150,7 +118,6 @@ int32_t CON_STDCALL hook_BuildWindow()
 		exStyle = WS_EX_APPWINDOW;
 	}
 
-	// Calculate window size including borders for windowed mode
 	RECT windowRect = { 0, 0, g_settings.width, g_settings.height };
 
 	if (! g_settings.fullscreen)
@@ -175,8 +142,6 @@ int32_t CON_STDCALL hook_BuildWindow()
 		return FALSE;
 	}
 
-	static uint32_t g_sysParamsInfo = 0;
-
 	UpdateWindow(window);
 
 	SetForegroundWindow(window);
@@ -185,6 +150,7 @@ int32_t CON_STDCALL hook_BuildWindow()
 
 	wndData->hAccTable = LoadAcceleratorsA(wndData->hInstance, "AppAccel");
 
+	static uint32_t g_sysParamsInfo = 0;
 	if (SystemParametersInfoA(SPI_SCREENSAVERRUNNING, TRUE, &g_sysParamsInfo, 0))
 	{
 		atexit([] {
@@ -194,7 +160,6 @@ int32_t CON_STDCALL hook_BuildWindow()
 	}
 
 	ShowCursor(TRUE);
-
 	ShowWindow(window, SW_SHOW);
 
 	return TRUE;

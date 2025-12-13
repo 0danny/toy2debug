@@ -368,6 +368,40 @@ bool Mapper::map(const std::string& path)
 	BYTE* vramFix = (BYTE*)(g_newImageBase + 0xACAC2);
 	*vramFix = 0xEB;
 
+	// remove the show cursor bullshit
+	uint8_t* p = (uint8_t*)0x20012E49;
+
+	for (int32_t i = 0; i < 22; i++)
+		p[i] = 0x90;
+
+	// // force load the module
+	// HMODULE modBase = LoadLibraryA("d3dim.dll");
+	// if (! modBase)
+	// {
+	// 	std::println("Module handle is bad");
+	// 	return false;
+	// }
+
+	// std::println("Module handle is good");
+
+	// // calculate patch address
+	// uint8_t* patchAddr = reinterpret_cast<uint8_t*>(modBase) + 0x584C;
+
+	// // change page protection
+	// DWORD oldProtect = 0;
+	// if (! VirtualProtect(patchAddr, 5, PAGE_EXECUTE_READWRITE, &oldProtect))
+	// {
+	// 	std::println("VirtualProtect failed");
+	// 	return false;
+	// }
+
+	// // write NOPs
+	// for (int32_t i = 0; i < 5; i++)
+	// 	patchAddr[i] = 0x90;
+
+	// // restore original protection
+	// VirtualProtect(patchAddr, 5, oldProtect, &oldProtect);
+
 	retnAddr = retAddr;
 
 	return true;

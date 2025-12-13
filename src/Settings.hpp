@@ -12,9 +12,10 @@ namespace Settings
 	{
 		RenderAPI renderApi = DirectX3;
 		char gamePath[512] = { 0 };
-		int32_t width = 1920;
-		int32_t height = 1080;
+		int32_t width = 1600;
+		int32_t height = 900;
 		bool fullscreen = false;
+		bool use32BitColors = true;
 	};
 
 	inline bool save()

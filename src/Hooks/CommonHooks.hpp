@@ -39,15 +39,23 @@ private:
 		return;
 	}
 
+	static int32_t CON_STDCALL hook_BuildProfileMachine()
+	{
+		// useless now that we hook all window/driver code
+		return TRUE;
+	}
+
 	bool init() override
 	{
 		// Address definitions
 		const int32_t kReadRegistry = MAP_ADDRESS(0xA6390);
 		const int32_t kProfileCPU = MAP_ADDRESS(0x7EF80);
+		const int32_t kBuildProfileMachine = MAP_ADDRESS(0x93A0);
 
 		// Init Hooks
 		Hook::createHook(kReadRegistry, &hook_ReadRegistry);
 		Hook::createHook(kProfileCPU, &hook_ProfileCPU);
+		Hook::createHook(kBuildProfileMachine, &hook_BuildProfileMachine);
 
 		return ! Hook::hasFailedHooks();
 	}

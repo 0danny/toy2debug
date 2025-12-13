@@ -75,6 +75,23 @@ void MainTab::render()
 	ImGui::InputText("##game_path", m_gamePath.data(), m_gamePath.length(), ImGuiInputTextFlags_ReadOnly);
 	ImGui::PopItemWidth();
 
+	ImGui::BeginTable("launch_options", 2, ImGuiTableFlags_SizingStretchProp);
+	// Width
+	ImGui::TableNextRow();
+	ImGui::TableSetColumnIndex(0);
+	ImGui::InputInt("Width", &g_settings.width);
+
+	// Height
+	ImGui::TableSetColumnIndex(1);
+	ImGui::InputInt("Height", &g_settings.height);
+	ImGui::EndTable();
+
+	ImGui::Checkbox("32 bit Colour", &g_settings.use32BitColors);
+	ImGui::SameLine();
+	ImGui::Checkbox("Fullscreen", &g_settings.fullscreen);
+
+	ImGui::Spacing();
+
 	ImGui::Button("Change Path", { ImGui::GetContentRegionAvail().x, 30 });
 
 	if (ImGui::Button("Map Game", { ImGui::GetContentRegionAvail().x, 30 }))
@@ -100,8 +117,10 @@ void MainTab::launchGame()
 	{
 		case Settings::RenderAPI::DirectX3:
 			hooks.push_back(std::make_shared<DirectX3>());
+			break;
 		case Settings::RenderAPI::DirectX9:
 			hooks.push_back(std::make_shared<DirectX9>());
+			break;
 	}
 
 	if (MH_Initialize())

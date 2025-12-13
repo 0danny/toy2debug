@@ -1,6 +1,7 @@
 #include "DeviceHooks.hpp"
 #include "Mapper.hpp"
 #include "ToyTypes.hpp"
+#include "Settings.hpp"
 
 #define D3D_ERR_DDRAW_CREATE 0x82000001
 #define D3D_ERR_COOP_LEVEL 0x82000002
@@ -21,7 +22,7 @@ static bool m_useDoubleBuffer = true;
 HRESULT CreateDirectDrawInterface(GUID* ddGuid, bool fullscreen);
 HRESULT CreateD3DInterface();
 HRESULT SelectDevice(const IID&);
-HRESULT CreateSurfaces(bool fullscreen, int width, int height);
+HRESULT CreateSurfaces(bool fullscreen, int32_t width, int32_t height);
 HRESULT CreateZBuffer();
 HRESULT CreateDevice(const IID&);
 HRESULT CreateViewport();
@@ -30,9 +31,9 @@ void Cleanup();
 // Helpers
 static HRESULT CALLBACK EnumZBufferCallback(LPDDPIXELFORMAT format, LPVOID context);
 void InitSurfaceDesc(DDSURFACEDESC2* desc, DWORD flags, DWORD caps);
-void BuildViewportData(D3DVIEWPORT2* viewport, int width, int height);
+void BuildViewportData(D3DVIEWPORT2* viewport, int32_t width, int32_t height);
 
-HRESULT Initialize(HWND hWnd, bool fullscreen, int width, int height, GUID* ddGuid, const IID& deviceGuid)
+HRESULT Initialize(HWND hWnd, bool fullscreen, int32_t width, int32_t height, GUID* ddGuid, const IID& deviceGuid)
 {
 	HRESULT hr;
 
@@ -110,6 +111,7 @@ HRESULT CreateDirectDrawInterface(GUID* ddGuid, bool fullscreen)
 	DWORD coopFlags = fullscreen ? (DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN | DDSCL_ALLOWREBOOT) : (DDSCL_NORMAL);
 
 	hr = m_framework.pDD->SetCooperativeLevel(m_framework.hWnd, coopFlags);
+
 	if (FAILED(hr))
 		return D3D_ERR_COOP_LEVEL;
 
@@ -186,7 +188,7 @@ HRESULT CALLBACK EnumZBufferCallback(LPDDPIXELFORMAT format, LPVOID context)
 	return D3DENUMRET_OK;
 }
 
-HRESULT CreateSurfaces(bool fullscreen, int width, int height)
+HRESULT CreateSurfaces(bool fullscreen, int32_t width, int32_t height)
 {
 	DDSURFACEDESC2 desc;
 	HRESULT hr;
@@ -194,7 +196,7 @@ HRESULT CreateSurfaces(bool fullscreen, int width, int height)
 	if (fullscreen)
 	{
 		// Set display mode
-		hr = m_framework.pDD->SetDisplayMode(width, height, 16, 0, 0);
+		hr = m_framework.pDD->SetDisplayMode(width, height, g_settings.use32BitColors ? 32 : 16, 0, 0);
 		if (FAILED(hr))
 			return D3D_ERR_DISPLAY_MODE;
 
@@ -400,7 +402,7 @@ void InitSurfaceDesc(DDSURFACEDESC2* desc, DWORD flags, DWORD caps)
 	desc->ddsCaps.dwCaps = caps;
 }
 
-void BuildViewportData(D3DVIEWPORT2* viewport, int width, int height)
+void BuildViewportData(D3DVIEWPORT2* viewport, int32_t width, int32_t height)
 {
 	memset(viewport, 0, sizeof(D3DVIEWPORT2));
 	viewport->dwSize = sizeof(D3DVIEWPORT2);
@@ -413,148 +415,15 @@ void BuildViewportData(D3DVIEWPORT2* viewport, int width, int height)
 	viewport->dvMaxZ = 1.0f;
 }
 
-void FixWindowedModeWindow(HWND hWnd, int clientWidth, int clientHeight, bool center = true)
-{
-	if (! hWnd || ! IsWindow(hWnd))
-		return;
-
-	// Get current window style
-	DWORD style = GetWindowLong(hWnd, GWL_STYLE);
-	DWORD exStyle = GetWindowLong(hWnd, GWL_EXSTYLE);
-
-	// Set proper windowed style
-	style &= ~WS_POPUP; // Remove popup style
-	style |= (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX);
-
-	SetWindowLong(hWnd, GWL_STYLE, style);
-
-	SetMenu(hWnd, nullptr);
-
-	// Calculate required window size for desired client area
-	RECT windowRect = { 0, 0, clientWidth, clientHeight };
-	AdjustWindowRectEx(&windowRect, style, GetMenu(hWnd) != nullptr, exStyle);
-
-	int windowWidth = windowRect.right - windowRect.left;
-	int windowHeight = windowRect.bottom - windowRect.top;
-
-	int posX = 0;
-	int posY = 0;
-
-	if (center)
-	{
-		// Center on screen
-		int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-		int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-
-		posX = (screenWidth - windowWidth) / 2;
-		posY = (screenHeight - windowHeight) / 2;
-
-		// Keep on screen
-		if (posX < 0)
-			posX = 0;
-		if (posY < 0)
-			posY = 0;
-
-		// Make sure window isn't too far right/bottom
-		if (posX + windowWidth > screenWidth)
-			posX = screenWidth - windowWidth;
-		if (posY + windowHeight > screenHeight)
-			posY = screenHeight - windowHeight;
-	}
-	else
-	{
-		// Keep current position
-		RECT currentRect;
-		GetWindowRect(hWnd, &currentRect);
-		posX = currentRect.left;
-		posY = currentRect.top;
-	}
-
-	// Apply changes
-	SetWindowPos(hWnd, HWND_NOTOPMOST, posX, posY, windowWidth, windowHeight, SWP_FRAMECHANGED | SWP_SHOWWINDOW);
-
-	// Force redraw
-	InvalidateRect(hWnd, nullptr, TRUE);
-	UpdateWindow(hWnd);
-}
-
-void FixWindowInputFocus(HWND hWnd)
-{
-	if (! hWnd || ! IsWindow(hWnd))
-		return;
-
-	// Force the window to receive input focus
-	SetForegroundWindow(hWnd);
-	SetFocus(hWnd);
-	SetActiveWindow(hWnd);
-
-	// Make sure window is visible and enabled
-	ShowWindow(hWnd, SW_SHOW);
-	EnableWindow(hWnd, TRUE);
-
-	// Bring to front
-	BringWindowToTop(hWnd);
-}
-
 void CON_STDCALL hook_RunModeSelect()
 {
-	// typedef int32_t(__cdecl * DrawingDeviceBuild)(HWND p_hWnd, GUID * p_guid, DDAppDevice * p_device, DDAppDisplayMode * p_displayMode, byte p_flags);
-
-	// DrawingDeviceBuild drawDeviceBuild = (DrawingDeviceBuild)(g_newImageBase + 0xABEB0);
-
-	// DDAppDevice appDevice;
-
-	// const static CLSID CLSID_D3DHAL = { 0x84e63de0, 0x46aa, 0x11cf, { 0x81, 0x6f, 0x00, 0x00, 0xc0, 0x20, 0x15, 0x6e } };
-	// appDevice.guid = CLSID_D3DHAL;
-
-	// DDAppDisplayMode displayMode;
-	// memset(&displayMode, 0, sizeof(displayMode));
-	// displayMode.surfaceDesc.dwSize = 124;
-	// displayMode.surfaceDesc.dwFlags = DDSD_WIDTH | DDSD_HEIGHT | DDSD_PIXELFORMAT;
-	// displayMode.surfaceDesc.dwWidth = 1024;
-	// displayMode.surfaceDesc.dwHeight = 768;
-	// displayMode.surfaceDesc.ddpfPixelFormat.dwSize = 32;
-	// displayMode.surfaceDesc.ddpfPixelFormat.dwRGBBitCount = 32;
-	// displayMode.surfaceDesc.dwMipMapCount = 0;
-
-	// ShowWindow(wndData->mainHwnd, 3);
-
-	// int32_t unusedFlag1 = 1;
-	// int32_t unusedFlag2 = 1;
-	// int32_t canDoWindowed = 1;
-
-	// int32_t flags = 0 | 2;
-
-	// drawDeviceBuild(wndData->mainHwnd, 0, &appDevice, &displayMode, flags);
-
-	// SetWindowPos(wndData->mainHwnd, 0, 0, 0, 1024, 768, 2u);
-
 	WindowData* wndData = (WindowData*)(g_newImageBase + 0x134488);
-
-	// // FIX WINDOW STYLE FIRST - this is critical!
-	// DWORD style = GetWindowLong(wndData->mainHwnd, GWL_STYLE);
-	// DWORD exStyle = GetWindowLong(wndData->mainHwnd, GWL_EXSTYLE);
-
-	// // Remove popup/fullscreen styles
-	// style &= ~(WS_POPUP | WS_MAXIMIZE);
-
-	// // Add proper windowed styles
-	// style |= (WS_OVERLAPPEDWINDOW | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX);
-
-	// // Remove fullscreen extended styles
-	// exStyle &= ~(WS_EX_TOPMOST | WS_EX_TOOLWINDOW);
-
-	// SetWindowLong(wndData->mainHwnd, GWL_STYLE, style);
-	// SetWindowLong(wndData->mainHwnd, GWL_EXSTYLE, exStyle);
-
-	// // Force style update
-	// SetWindowPos(wndData->mainHwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
 
 	const static GUID IID_IDirect3DHALDevice = { 0x84e63de0, 0x46aa, 0x11cf, { 0x81, 0x6f, 0x00, 0x00, 0xc0, 0x20, 0x15, 0x6e } };
 
 	*(CD3DFramework**)MAP_ADDRESS(0x484008) = &m_framework;
 
-	HRESULT hr = Initialize(wndData->mainHwnd, false, 1920, 1080, nullptr, IID_IDirect3DHALDevice);
+	HRESULT hr = Initialize(wndData->mainHwnd, g_settings.fullscreen, g_settings.width, g_settings.height, nullptr, IID_IDirect3DHALDevice);
 
 	return;
 }
