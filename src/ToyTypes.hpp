@@ -1,13 +1,12 @@
 #pragma once
 
+#define DIRECT3D_VERSION 0x0600
+
 #include <cstdint>
-#include <d3d9.h>
-#include <d3d9types.h>
-#include <d3d9caps.h>
-#include <ddraw.h>
 #include <d3d.h>
 #include <d3dtypes.h>
 #include <d3dcaps.h>
+#include <ddraw.h>
 
 struct RGBA
 {
@@ -31,8 +30,8 @@ struct DrawingDeviceSlot
 	int32_t unkInt2;
 	int32_t width;
 	int32_t height;
-	IDirect3DSurface9* surface1;
-	IDirect3DSurface9* surface2;
+	LPDIRECTDRAWSURFACE4 surface1;
+	LPDIRECTDRAWSURFACE4 surface2;
 };
 
 struct CD3DFramework
@@ -43,14 +42,14 @@ struct CD3DFramework
 	int32_t dwRenderHeight;
 	RECT rcScreenRect;
 	RECT rcViewportRect;
-	IDirect3DSurface9* pddsFrontBuffer;
-	IDirect3DSurface9* pddsBackBuffer;
-	IDirect3DSurface9* pddsRenderTarget;
-	IDirect3DSurface9* pddsZBuffer;
-	IDirect3DDevice9* pd3dDevice;
-	void* pvViewport;
-	IDirect3D9* pDD;
-	void* pD3D;
+	LPDIRECTDRAWSURFACE4 pddsFrontBuffer;
+	LPDIRECTDRAWSURFACE4 pddsBackBuffer;
+	LPDIRECTDRAWSURFACE4 pddsRenderTarget;
+	LPDIRECTDRAWSURFACE4 pddsZBuffer;
+	LPDIRECT3DDEVICE3 pd3dDevice;
+	LPDIRECT3DVIEWPORT3 pvViewport;
+	LPDIRECTDRAW4 pDD;
+	LPDIRECT3D3 pD3D;
 	D3DDEVICEDESC ddDeviceDesc;
 	int32_t dwDeviceMemType;
 	DDPIXELFORMAT ddpfZBuffer;
@@ -105,7 +104,7 @@ struct DDApp
 struct Nu3DBmpDataNode
 {
 	LPDIRECTDRAWSURFACE4 surface;
-	LPDIRECT3DTEXTURE9 d3dTexture;
+	void* d3dTexture;
 	DDSURFACEDESC2 surfaceDesc;
 	uint32_t* texData;
 	uint32_t textureWidth;
@@ -123,6 +122,48 @@ struct Nu3DBmpDataNode
 	int32_t refCount;
 	Nu3DBmpDataNode* next;
 	Nu3DBmpDataNode* prev;
+};
+
+struct RenderStateCache
+{
+	int32_t zWriteEnable;
+	int32_t texturePerspective;
+	int32_t shadeMode;
+	int32_t textureFilter;
+	int32_t cullMode;
+	int32_t fillMode;
+	int32_t ditherEnable;
+	int32_t specularEnable;
+	int32_t antiAlias;
+	int32_t fogEnable;
+	int32_t fogColor;
+	int32_t fogTableMode;
+	float fogStart;
+	float fogEnd;
+};
+
+struct WindowData
+{
+	MSG wndEventMsg;
+	HACCEL hAccTable;
+	HINSTANCE hInstance;
+	HINSTANCE hPrev;
+	char* lpCmdLine;
+	HWND mainHwnd;
+	WNDCLASSEXA wndClass;
+	int32_t nShowCmd;
+	RenderStateCache stateCache;
+	int32_t unkInt1;
+	int32_t unkInt2;
+	int32_t unkInt3;
+	int32_t unkInt4;
+	int32_t unkInt5;
+	int32_t unkInt6;
+	int32_t unkInt7;
+	int32_t wndIsExiting;
+	int32_t unkInt8;
+	LPDIRECTDRAWSURFACE3 unusedDDSurface;
+	LPDIRECTDRAWSURFACE3 unusedDDSurface2;
 };
 
 struct Nu3DPixelFormatInfo

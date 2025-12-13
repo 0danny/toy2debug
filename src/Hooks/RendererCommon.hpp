@@ -29,6 +29,7 @@ namespace RendererCommon
 
 	= 32 bytes
 	*/
+
 	inline uint32_t getStrideFromFVF(uint32_t fvf)
 	{
 		if (fvf != 0x112)
@@ -42,4 +43,5 @@ namespace RendererCommon
 
 		return 32;
 	}
+
 }

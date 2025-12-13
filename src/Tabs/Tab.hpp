@@ -11,6 +11,7 @@ public:
 	Tab(std::string tabName)
 		: m_tabName(tabName) {};
 
+	virtual void init() = 0;
 	virtual void render() = 0;
 
 	const std::string& getName() { return m_tabName; }

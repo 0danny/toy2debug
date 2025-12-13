@@ -4,8 +4,7 @@
 #include <d3dtypes.h>
 #include <print>
 
-HRESULT CON_CDECL
-hook_DrawIndexedPrimitiveVB(D3DPRIMITIVETYPE primitiveType, LPDIRECT3DVERTEXBUFFER9 vertexBuffer, WORD* indices, DWORD indexCount, DWORD flags)
+HRESULT CON_CDECL hook_DrawIndexedPrimitiveVB(D3DPRIMITIVETYPE primitiveType, LPDIRECT3DVERTEXBUFFER9 vertexBuffer, WORD* indices, DWORD indexCount, DWORD flags)
 {
 	auto* device = RendererCommon::g_framework->pd3dDevice;
 
@@ -21,8 +20,7 @@ hook_DrawIndexedPrimitiveVB(D3DPRIMITIVETYPE primitiveType, LPDIRECT3DVERTEXBUFF
 	device->SetStreamSource(0, vertexBuffer, 0, vertexSize);
 
 	IDirect3DIndexBuffer9* pIndexBuffer = nullptr;
-	HRESULT hr = device->CreateIndexBuffer(
-		indexCount * sizeof(WORD), D3DUSAGE_WRITEONLY | D3DUSAGE_SOFTWAREPROCESSING, D3DFMT_INDEX16, D3DPOOL_DEFAULT, &pIndexBuffer, nullptr);
+	HRESULT hr = device->CreateIndexBuffer(indexCount * sizeof(WORD), D3DUSAGE_WRITEONLY | D3DUSAGE_SOFTWAREPROCESSING, D3DFMT_INDEX16, D3DPOOL_DEFAULT, &pIndexBuffer, nullptr);
 
 	if (SUCCEEDED(hr))
 	{
@@ -57,8 +55,7 @@ hook_DrawIndexedPrimitiveVB(D3DPRIMITIVETYPE primitiveType, LPDIRECT3DVERTEXBUFF
 	return hr;
 }
 
-HRESULT CON_CDECL hook_DrawIndexedPrimitive(
-	D3DPRIMITIVETYPE d3dptPrimitiveType, DWORD dwVertexTypeDesc, LPVOID lpvVertices, DWORD dwVertexCount, LPWORD lpwIndices, DWORD dwIndexCount, DWORD dwFlags)
+HRESULT CON_CDECL hook_DrawIndexedPrimitive(D3DPRIMITIVETYPE d3dptPrimitiveType, DWORD dwVertexTypeDesc, LPVOID lpvVertices, DWORD dwVertexCount, LPWORD lpwIndices, DWORD dwIndexCount, DWORD dwFlags)
 {
 	auto* device = RendererCommon::g_framework->pd3dDevice;
 

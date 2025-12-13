@@ -11,7 +11,8 @@ public:
 	using SharedPtr = std::shared_ptr<Hook>;
 
 	Hook(const std::string& hookName)
-		: m_hookName(hookName) {};
+		: m_hookName(hookName)
+		, m_failedHooks(0) {};
 
 	~Hook() = default;
 
@@ -19,13 +20,17 @@ public:
 	std::string getName() const { return m_hookName; };
 
 	// Helper to build an actual minhook hook without the reinterpret casting
-	inline bool createHook(int32_t address, void* detour, void** original = nullptr)
+	void createHook(int32_t address, void* detour, void** original = nullptr)
 	{
-		return MH_CreateHook(reinterpret_cast<void*>(address), detour, original) == MH_STATUS::MH_OK;
+		// lets us know if any hooks failed
+		m_failedHooks += MH_CreateHook(reinterpret_cast<void*>(address), detour, original);
 	}
+
+	bool hasFailedHooks() { return m_failedHooks > 0; }
 
 private:
 	std::string m_hookName;
+	int32_t m_failedHooks;
 };
 
 // Some calling convention macros for cleanliness

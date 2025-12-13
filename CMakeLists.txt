@@ -9,8 +9,13 @@ project(${PROJECT_NAME} C CXX RC)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/ToyDebug)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set(IMGUI_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/external/include/ImGui)
+
+set(RESOURCE_FILES
+    resources/app.rc
+)
 
 # Build ImGui in statically
 set(IMGUI_SOURCES
@@ -39,28 +44,54 @@ set(IMGUI_SOURCES
 )
 
 set(LOADER_SOURCES
-    src/Loader/Injector.hpp
-    src/Loader/Injector.cpp
-    src/Loader/InjectorUtils.hpp
+    src/Injector.hpp
+    src/Injector.cpp
+    src/InjectorUtils.hpp
 
-    src/Loader/Renderer.cpp
-    src/Loader/Renderer.cpp
+    src/Renderer.cpp
+    src/Renderer.cpp
 
-    src/Loader/Mapper.cpp
-    src/Loader/Mapper.hpp
+    src/Mapper.cpp
+    src/Mapper.hpp
 
-    src/Loader/Tabs/Tab.hpp
+    src/Tabs/Tab.hpp
 
-    src/Loader/Main.cpp
+    src/Tabs/MainTab.cpp
+    src/Tabs/MainTab.hpp
+
+    src/Tabs/DebugTab.cpp
+    src/Tabs/DebugTab.hpp
+
+    src/Settings.hpp
+
+    src/RenderAPI/DirectX3.cpp
+    src/RenderAPI/DirectX3.hpp
+
+    src/RenderAPI/DirectX9.cpp
+    src/RenderAPI/DirectX9.hpp
+
+    src/Hooks/DX3/DeviceHooks.cpp
+    src/Hooks/DX3/DeviceHooks.hpp
+
+    src/Hooks/CommonHooks.hpp
+    src/Hooks/RendererCommon.hpp
+
+    src/Hooks/WindowHooks.cpp
+    src/Hooks/WindowHooks.hpp
+
+    src/Main.cpp
 )
 
 # Build the loader
 add_executable(loader WIN32
     ${IMGUI_SOURCES}
     ${LOADER_SOURCES}
+    ${RESOURCE_FILES}
 )
 
-target_link_libraries(loader PRIVATE d3d9 ddraw)
+target_link_directories(loader PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/libs)
+target_link_libraries(loader PRIVATE d3d9 ddraw dxguid dwmapi MinHook.x32)
+target_compile_definitions(loader PRIVATE MH_STATIC)
 
 set(TOYDEBUG_SOURCES
     src/ToyDebug/Main.cpp
@@ -100,12 +131,12 @@ set(TOYDEBUG_SOURCES
     src/ToyDebug/Utils.hpp
 )
 
-# Build the toydebug dll
-add_library(toydebug SHARED
-    ${TOYDEBUG_SOURCES}
-    ${IMGUI_SOURCES}
-)
+# # Build the toydebug dll
+# add_library(toydebug SHARED
+#     ${TOYDEBUG_SOURCES}
+#     ${IMGUI_SOURCES}
+# )
 
-target_link_directories(toydebug PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/libs)
-target_link_libraries(toydebug PRIVATE MinHook.x32 d3d9 ddraw dxguid msimg32)
-target_compile_definitions(toydebug PRIVATE MH_STATIC)
+# target_link_directories(toydebug PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/libs)
+# target_link_libraries(toydebug PRIVATE MinHook.x32 d3d9 ddraw dxguid msimg32)
+# target_compile_definitions(toydebug PRIVATE MH_STATIC)
