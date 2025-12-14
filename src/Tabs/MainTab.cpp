@@ -2,7 +2,7 @@
 #include "Settings.hpp"
 
 // Hooks
-#include "RenderAPI/DirectX3.hpp"
+#include "RenderAPI/DirectX6.hpp"
 #include "RenderAPI/DirectX9.hpp"
 #include "Hooks/CommonHooks.hpp"
 #include "Hooks/WindowHooks.hpp"
@@ -115,8 +115,8 @@ void MainTab::launchGame()
 
 	switch (g_settings.renderApi)
 	{
-		case Settings::RenderAPI::DirectX3:
-			hooks.push_back(std::make_shared<DirectX3>());
+		case Settings::RenderAPI::DirectX6:
+			hooks.push_back(std::make_shared<DirectX6>());
 			break;
 		case Settings::RenderAPI::DirectX9:
 			hooks.push_back(std::make_shared<DirectX9>());

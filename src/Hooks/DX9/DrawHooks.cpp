@@ -1,5 +1,5 @@
 #include "DrawHooks.hpp"
-#include "Renderer/RendererCommon.hpp"
+#include "Hooks/RendererCommon.hpp"
 
 #include <d3dtypes.h>
 #include <print>
@@ -154,11 +154,11 @@ bool DrawHooks::init()
 	constexpr int32_t kDrawPrimAddr = 0x004AC2A0;
 
 	// Init Hooks
-	bool result = false;
+	bool result = true;
 
-	result = Hook::createHook(kDrawIndexedPrimVBAddr, &hook_DrawIndexedPrimitiveVB);
-	result = Hook::createHook(kDrawIndexedPrimAddr, &hook_DrawIndexedPrimitive);
-	result = Hook::createHook(kDrawPrimAddr, &hook_DrawPrimitive);
+	Hook::createHook(kDrawIndexedPrimVBAddr, &hook_DrawIndexedPrimitiveVB);
+	Hook::createHook(kDrawIndexedPrimAddr, &hook_DrawIndexedPrimitive);
+	Hook::createHook(kDrawPrimAddr, &hook_DrawPrimitive);
 
 	return result;
 }

@@ -1,5 +1,5 @@
 #include "LightsHooks.hpp"
-#include "Renderer/RendererCommon.hpp"
+#include "Hooks/RendererCommon.hpp"
 
 #include <print>
 
@@ -198,14 +198,14 @@ bool LightsHooks::init()
 	constexpr int32_t kReleaseLightAddr = 0x004ABFC0;
 
 	// Init Hooks
-	bool result = false;
+	bool result = true;
 
-	result = Hook::createHook(kSetLightStateAddr, &hook_SetLightState);
-	result = Hook::createHook(kCreateLightAddr, &hook_CreateLight);
-	result = Hook::createHook(kSetLightAddr, &hook_SetLight);
-	result = Hook::createHook(kAddLightAddr, &hook_AddLight);
-	result = Hook::createHook(kDeleteLightAddr, &hook_DeleteLight);
-	result = Hook::createHook(kReleaseLightAddr, &hook_ReleaseLight);
+	Hook::createHook(kSetLightStateAddr, &hook_SetLightState);
+	Hook::createHook(kCreateLightAddr, &hook_CreateLight);
+	Hook::createHook(kSetLightAddr, &hook_SetLight);
+	Hook::createHook(kAddLightAddr, &hook_AddLight);
+	Hook::createHook(kDeleteLightAddr, &hook_DeleteLight);
+	Hook::createHook(kReleaseLightAddr, &hook_ReleaseLight);
 
 	return result;
 }

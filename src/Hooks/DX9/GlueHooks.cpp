@@ -1,5 +1,5 @@
 #include "GlueHooks.hpp"
-#include "Renderer/RendererCommon.hpp"
+#include "Hooks/RendererCommon.hpp"
 
 #include <d3dtypes.h>
 #include <print>
@@ -298,10 +298,10 @@ bool GlueHooks::init()
 	constexpr int32_t kBackdropBltFastAddr = 0x004CE4D0;
 
 	// Init Hooks
-	bool result = false;
+	bool result = true;
 
-	result = Hook::createHook(kGlueSetBackdropAddr, &hook_GlueSetBackdrop);
-	result = Hook::createHook(kBackdropBltFastAddr, &hook_GlueBackdropBltFast);
+	Hook::createHook(kGlueSetBackdropAddr, &hook_GlueSetBackdrop);
+	Hook::createHook(kBackdropBltFastAddr, &hook_GlueBackdropBltFast);
 
 	return result;
 }

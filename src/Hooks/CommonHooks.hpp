@@ -41,8 +41,36 @@ private:
 
 	static int32_t CON_STDCALL hook_BuildProfileMachine()
 	{
+		// g_renderMode = D3DRenderer
+		*(int32_t*)MAP_ADDRESS(0x134554) = 2;
+
 		// useless now that we hook all window/driver code
 		return TRUE;
+	}
+
+	void patchCursorHiding()
+	{
+		// remove the show cursor bullshit
+
+		/*
+			.text:20012E49 loc_20012E49:
+			.text:20012E49                 mov     esi, ds:__imp_ShowCursor
+			.text:20012E4F                 push    0               ; bShow
+			.text:20012E51                 call    esi ; __imp_ShowCursor
+			.text:20012E53                 test    eax, eax
+			.text:20012E55                 jl      short loc_20012E5F
+			.text:20012E57
+			.text:20012E57 loc_20012E57:
+			.text:20012E57                 push    0               ; bShow
+			.text:20012E59                 call    esi ; __imp_ShowCursor
+			.text:20012E5B                 test    eax, eax
+			.text:20012E5D                 jge     short loc_20012E57
+		*/
+
+		uint8_t* p = (uint8_t*)MAP_ADDRESS(0x12E49);
+
+		for (int32_t byte = 0; byte < 22; byte++)
+			p[byte] = 0x90;
 	}
 
 	bool init() override
@@ -56,6 +84,8 @@ private:
 		Hook::createHook(kReadRegistry, &hook_ReadRegistry);
 		Hook::createHook(kProfileCPU, &hook_ProfileCPU);
 		Hook::createHook(kBuildProfileMachine, &hook_BuildProfileMachine);
+
+		patchCursorHiding();
 
 		return ! Hook::hasFailedHooks();
 	}

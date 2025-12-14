@@ -8,7 +8,6 @@ cmake_minimum_required(VERSION 3.20.0)
 project(${PROJECT_NAME} C CXX RC)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/ToyDebug)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set(IMGUI_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/external/include/ImGui)
@@ -44,10 +43,6 @@ set(IMGUI_SOURCES
 )
 
 set(LOADER_SOURCES
-    src/Injector.hpp
-    src/Injector.cpp
-    src/InjectorUtils.hpp
-
     src/Renderer.cpp
     src/Renderer.cpp
 
@@ -64,20 +59,52 @@ set(LOADER_SOURCES
 
     src/Settings.hpp
 
-    src/RenderAPI/DirectX3.cpp
-    src/RenderAPI/DirectX3.hpp
+    src/RenderAPI/DirectX6.cpp
+    src/RenderAPI/DirectX6.hpp
 
     src/RenderAPI/DirectX9.cpp
     src/RenderAPI/DirectX9.hpp
 
-    src/Hooks/DX3/DeviceHooks.cpp
-    src/Hooks/DX3/DeviceHooks.hpp
+    # DirectX6 Hooks
+    src/Hooks/DX6/DeviceHooks.cpp
+    src/Hooks/DX6/DeviceHooks.hpp
+    # End DirectX6 Hooks
+
+    # DirectX9 Hooks
+    src/Hooks/DX9/DeviceHooks.cpp
+    src/Hooks/DX9/DeviceHooks.hpp
+
+    src/Hooks/DX9/LightsHooks.cpp
+    src/Hooks/DX9/LightsHooks.hpp
+
+    src/Hooks/DX9/VBHooks.cpp
+    src/Hooks/DX9/VBHooks.hpp
+
+    src/Hooks/DX9/DrawHooks.cpp
+    src/Hooks/DX9/DrawHooks.hpp
+
+    src/Hooks/DX9/PipelineHooks.cpp
+    src/Hooks/DX9/PipelineHooks.hpp
+
+    src/Hooks/DX9/GlueHooks.cpp
+    src/Hooks/DX9/GlueHooks.hpp
+
+    src/Hooks/DX9/TexMatHooks.cpp
+    src/Hooks/DX9/TexMatHooks.hpp
+
+    src/Hooks/DX9/StubHooks.hpp
+    # End DirectX9 Hooks
 
     src/Hooks/CommonHooks.hpp
     src/Hooks/RendererCommon.hpp
 
     src/Hooks/WindowHooks.cpp
     src/Hooks/WindowHooks.hpp
+
+    src/ToyTypes.hpp
+    src/ToyTypesDX9.hpp
+
+    src/Utils.hpp
 
     src/Main.cpp
 )
@@ -90,53 +117,5 @@ add_executable(loader WIN32
 )
 
 target_link_directories(loader PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/libs)
-target_link_libraries(loader PRIVATE d3d9 ddraw dxguid dwmapi MinHook.x32)
+target_link_libraries(loader PRIVATE d3d9 ddraw dxguid msimg32 MinHook.x32)
 target_compile_definitions(loader PRIVATE MH_STATIC)
-
-set(TOYDEBUG_SOURCES
-    src/ToyDebug/Main.cpp
-
-    src/ToyDebug/Renderer/Renderer.cpp
-    src/ToyDebug/Renderer/Renderer.hpp
-    src/ToyDebug/Renderer/RendererCommon.hpp
-
-    src/ToyDebug/Renderer/Hooks/DeviceHooks.cpp
-    src/ToyDebug/Renderer/Hooks/DeviceHooks.hpp
-
-    src/ToyDebug/Renderer/Hooks/LightsHooks.cpp
-    src/ToyDebug/Renderer/Hooks/LightsHooks.hpp
-
-    src/ToyDebug/Renderer/Hooks/VBHooks.cpp
-    src/ToyDebug/Renderer/Hooks/VBHooks.hpp
-
-    src/ToyDebug/Renderer/Hooks/DrawHooks.cpp
-    src/ToyDebug/Renderer/Hooks/DrawHooks.hpp
-
-    src/ToyDebug/Renderer/Hooks/PipelineHooks.cpp
-    src/ToyDebug/Renderer/Hooks/PipelineHooks.hpp
-
-    src/ToyDebug/Renderer/Hooks/GlueHooks.cpp
-    src/ToyDebug/Renderer/Hooks/GlueHooks.hpp
-
-    src/ToyDebug/Renderer/Hooks/TexMatHooks.cpp
-    src/ToyDebug/Renderer/Hooks/TexMatHooks.hpp
-
-    src/ToyDebug/Renderer/Hooks/MiscHooks.cpp
-    src/ToyDebug/Renderer/Hooks/MiscHooks.hpp
-
-    src/ToyDebug/Renderer/Hooks/StubHooks.hpp
-
-    src/ToyDebug/ToyTypes.hpp
-    src/ToyDebug/Hook.hpp
-    src/ToyDebug/Utils.hpp
-)
-
-# # Build the toydebug dll
-# add_library(toydebug SHARED
-#     ${TOYDEBUG_SOURCES}
-#     ${IMGUI_SOURCES}
-# )
-
-# target_link_directories(toydebug PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/libs)
-# target_link_libraries(toydebug PRIVATE MinHook.x32 d3d9 ddraw dxguid msimg32)
-# target_compile_definitions(toydebug PRIVATE MH_STATIC)

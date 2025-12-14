@@ -1,5 +1,5 @@
 #include "DeviceHooks.hpp"
-#include "Renderer/RendererCommon.hpp"
+#include "Hooks/RendererCommon.hpp"
 
 #include <print>
 
@@ -206,9 +206,9 @@ bool DeviceHooks::init()
 	constexpr int32_t kInitializeForWindowAddr = 0x004AEDA0;
 
 	// Init Hooks
-	bool result = false;
+	bool result = true;
 
-	result = Hook::createHook(kInitializeForWindowAddr, &hook_InitalizeForWindow);
+	Hook::createHook(kInitializeForWindowAddr, &hook_InitalizeForWindow);
 
 	return result;
 }

@@ -1,5 +1,5 @@
 #include "VBHooks.hpp"
-#include "Renderer/RendererCommon.hpp"
+#include "Hooks/RendererCommon.hpp"
 
 #include <stdexcept>
 #include <d3dtypes.h>
@@ -63,8 +63,8 @@ HRESULT CON_CDECL hook_OptimizeVertexBuffer(LPDIRECT3DVERTEXBUFFER9 buffer, void
 	return D3D_OK;
 }
 
-HRESULT CON_CDECL hook_ProcessVerticesOnBuffer(
-	LPDIRECT3DVERTEXBUFFER9 destBuffer, DWORD dwVertexOp, DWORD dwDestIndex, DWORD dwCount, LPDIRECT3DVERTEXBUFFER9 srcBuffer, DWORD dwSrcIndex, DWORD dwFlags)
+HRESULT CON_CDECL
+hook_ProcessVerticesOnBuffer(LPDIRECT3DVERTEXBUFFER9 destBuffer, DWORD dwVertexOp, DWORD dwDestIndex, DWORD dwCount, LPDIRECT3DVERTEXBUFFER9 srcBuffer, DWORD dwSrcIndex, DWORD dwFlags)
 {
 	auto* device = RendererCommon::g_framework->pd3dDevice;
 
@@ -108,12 +108,12 @@ bool VBHooks::init()
 	// Init Hooks
 	bool result = false;
 
-	result = Hook::createHook(kReleaseVertexBufferAddr, &hook_ReleaseVertexBuffer);
-	result = Hook::createHook(kCreateVertexBufferAddr, &hook_CreateVertexBuffer);
-	result = Hook::createHook(kLockVertexBufferAddr, &hook_LockVertexBuffer);
-	result = Hook::createHook(kUnlockVertexBufferAddr, &hook_UnlockVertexBuffer);
-	result = Hook::createHook(kOptimizeVertexBufferAddr, &hook_OptimizeVertexBuffer);
-	result = Hook::createHook(kProcessVertsOnBufferAddr, &hook_ProcessVerticesOnBuffer);
+	Hook::createHook(kReleaseVertexBufferAddr, &hook_ReleaseVertexBuffer);
+	Hook::createHook(kCreateVertexBufferAddr, &hook_CreateVertexBuffer);
+	Hook::createHook(kLockVertexBufferAddr, &hook_LockVertexBuffer);
+	Hook::createHook(kUnlockVertexBufferAddr, &hook_UnlockVertexBuffer);
+	Hook::createHook(kOptimizeVertexBufferAddr, &hook_OptimizeVertexBuffer);
+	Hook::createHook(kProcessVertsOnBufferAddr, &hook_ProcessVerticesOnBuffer);
 
 	return result;
 }

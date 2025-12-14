@@ -4,13 +4,13 @@ namespace Settings
 {
 	enum RenderAPI
 	{
-		DirectX3,
+		DirectX6,
 		DirectX9
 	};
 
 	struct LoaderSettings
 	{
-		RenderAPI renderApi = DirectX3;
+		RenderAPI renderApi = DirectX6;
 		char gamePath[512] = { 0 };
 		int32_t width = 1600;
 		int32_t height = 900;

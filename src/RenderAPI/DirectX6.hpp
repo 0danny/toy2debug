@@ -4,13 +4,16 @@
 
 #include <vector>
 
-class DirectX3 final : public Hook
+class DirectX6 final : public Hook
 {
 public:
-	DirectX3()
-		: Hook("DirectX3Renderer") {};
+	DirectX6()
+		: Hook("DirectX6Renderer") {};
 
 	bool init() override;
+
+private:
+	void patchRenderTarget();
 
 private:
 	std::vector<Hook::SharedPtr> m_hooks;

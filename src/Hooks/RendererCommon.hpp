@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ToyTypes.hpp"
+#include "ToyTypesDX9.hpp"
 
 namespace RendererCommon
 {

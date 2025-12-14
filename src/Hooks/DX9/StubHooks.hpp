@@ -15,10 +15,10 @@ public:
 		constexpr int32_t kFontBuilderAddr = 0x004B4110;
 
 		// Init Hooks
-		bool result = false;
+		bool result = true;
 
-		result = Hook::createHook(kSoftwareRenderer1Addr, &hook_SoftwareRenderer1);
-		result = Hook::createHook(kFontBuilderAddr, &hook_BuildFont);
+		Hook::createHook(kSoftwareRenderer1Addr, &hook_SoftwareRenderer1);
+		Hook::createHook(kFontBuilderAddr, &hook_BuildFont);
 
 		return result;
 	};

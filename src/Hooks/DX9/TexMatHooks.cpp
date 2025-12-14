@@ -1,5 +1,5 @@
 #include "TexMatHooks.hpp"
-#include "Renderer/RendererCommon.hpp"
+#include "Hooks/RendererCommon.hpp"
 
 #include <d3dtypes.h>
 
@@ -189,10 +189,7 @@ HRESULT hook_SetTexture(int32_t stageIndex, Nu3DBmpDataNode* bmpDataNode)
 	return RendererCommon::g_framework->pd3dDevice->SetTexture(stageIndex, nullptr);
 }
 
-HRESULT CON_CDECL hook_SetTextureStageState(DWORD stage, D3DTEXTURESTAGESTATETYPE state, DWORD value)
-{
-	return RendererCommon::g_framework->pd3dDevice->SetTextureStageState(stage, state, value);
-}
+HRESULT CON_CDECL hook_SetTextureStageState(DWORD stage, D3DTEXTURESTAGESTATETYPE state, DWORD value) { return RendererCommon::g_framework->pd3dDevice->SetTextureStageState(stage, state, value); }
 
 bool TexMatHooks::init()
 {
@@ -207,12 +204,12 @@ bool TexMatHooks::init()
 	// Init Hooks
 	bool result = false;
 
-	result = Hook::createHook(kCreateMaterialAddr, &hook_CreateMaterial);
-	result = Hook::createHook(kSetMaterialAddr, &hook_SetMaterial);
-	result = Hook::createHook(kGetHandleAddr, &hook_GetHandle);
-	result = Hook::createHook(kSetTextureStageAddr, &hook_SetTextureStageState);
-	result = Hook::createHook(kSetTextureAddr, &hook_SetTexture);
-	result = Hook::createHook(kIntialiseTextureSurfaceAddr, &hook_InitialiseTextureSurface);
+	Hook::createHook(kCreateMaterialAddr, &hook_CreateMaterial);
+	Hook::createHook(kSetMaterialAddr, &hook_SetMaterial);
+	Hook::createHook(kGetHandleAddr, &hook_GetHandle);
+	Hook::createHook(kSetTextureStageAddr, &hook_SetTextureStageState);
+	Hook::createHook(kSetTextureAddr, &hook_SetTexture);
+	Hook::createHook(kIntialiseTextureSurfaceAddr, &hook_InitialiseTextureSurface);
 
 	return result;
 }

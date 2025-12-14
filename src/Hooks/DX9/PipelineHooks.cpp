@@ -1,5 +1,5 @@
 #include "PipelineHooks.hpp"
-#include "Renderer/RendererCommon.hpp"
+#include "Hooks/RendererCommon.hpp"
 
 #include <d3dtypes.h>
 
@@ -191,17 +191,17 @@ bool PipelineHooks::init()
 	constexpr int32_t kSetRenderState = 0x004AC370;
 
 	// Init Hooks
-	bool result = false;
+	bool result = true;
 
-	result = Hook::createHook(kBeginSceneAddr, &hook_BeginScene);
-	result = Hook::createHook(kEndSceneAddr, &hook_EndScene);
-	result = Hook::createHook(kPresentFrameAddr, &hook_PresentFrame);
-	result = Hook::createHook(kSetViewportAddr, &hook_SetViewport);
-	result = Hook::createHook(kClearScreenAddr, &hook_ClearScreen);
-	result = Hook::createHook(kSetViewTransformAddr, &hook_SetViewTransform);
-	result = Hook::createHook(kSetProjTransformAddr, &hook_SetProjectionTransform);
-	result = Hook::createHook(kSetWorldTransformAddr, &hook_SetWorldTransform);
-	result = Hook::createHook(kSetRenderState, &hook_SetRenderState);
+	Hook::createHook(kBeginSceneAddr, &hook_BeginScene);
+	Hook::createHook(kEndSceneAddr, &hook_EndScene);
+	Hook::createHook(kPresentFrameAddr, &hook_PresentFrame);
+	Hook::createHook(kSetViewportAddr, &hook_SetViewport);
+	Hook::createHook(kClearScreenAddr, &hook_ClearScreen);
+	Hook::createHook(kSetViewTransformAddr, &hook_SetViewTransform);
+	Hook::createHook(kSetProjTransformAddr, &hook_SetProjectionTransform);
+	Hook::createHook(kSetWorldTransformAddr, &hook_SetWorldTransform);
+	Hook::createHook(kSetRenderState, &hook_SetRenderState);
 
 	return result;
 }
