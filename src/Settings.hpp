@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 namespace Settings
 {
 	enum RenderAPI
@@ -11,22 +13,15 @@ namespace Settings
 	struct LoaderSettings
 	{
 		RenderAPI renderApi = DirectX6;
-		char gamePath[512] = { 0 };
+		char gamePath[256] = { 0 };
 		int32_t width = 1600;
 		int32_t height = 900;
 		bool fullscreen = false;
 		bool use32BitColors = true;
 	};
 
-	inline bool save()
-	{
-		// saving of the settings happens here.
-	}
-
-	inline bool load()
-	{
-		// loading of settings happens here.
-	}
+	bool save();
+	bool load();
 }
 
 inline Settings::LoaderSettings g_settings = {};

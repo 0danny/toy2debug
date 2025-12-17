@@ -11,6 +11,8 @@
 #include "Tabs/MainTab.hpp"
 #include "Tabs/DebugTab.hpp"
 
+#include "Settings.hpp"
+
 namespace
 {
 	constexpr static std::string_view kAppTitle = "Toy2Debug Loader";
@@ -209,6 +211,7 @@ LRESULT Renderer::wndProc(HWND hWnd, uint32_t msg, WPARAM wParam, LPARAM lParam)
 			ImGui_ImplDX9_CreateDeviceObjects();
 			return 0;
 		case WM_DESTROY:
+			Settings::save();
 			PostQuitMessage(0);
 			return 0;
 	}

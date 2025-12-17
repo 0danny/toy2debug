@@ -34,7 +34,7 @@ LRESULT WINAPI windowWndProc(HWND hWnd, uint32_t msg, WPARAM wParam, LPARAM lPar
 		case WM_MOVE: {
 			if (! g_settings.fullscreen)
 			{
-				CD3DFramework* framework = *(CD3DFramework**)MAP_ADDRESS(0x484008);
+				CD3DFramework* framework = *Mapper::mapAddress<CD3DFramework**>(0x484008);
 
 				if (framework && framework->hWnd == hWnd)
 				{
@@ -57,7 +57,7 @@ LRESULT WINAPI windowWndProc(HWND hWnd, uint32_t msg, WPARAM wParam, LPARAM lPar
 
 		case WM_DESTROY:
 		case WM_NCDESTROY: {
-			WindowData* wndData = (WindowData*)MAP_ADDRESS(0x134488);
+			auto* wndData = Mapper::mapAddress<WindowData*>(0x134488);
 			wndData->wndIsExiting = 1;
 			break;
 		}
@@ -73,7 +73,7 @@ LRESULT WINAPI windowWndProc(HWND hWnd, uint32_t msg, WPARAM wParam, LPARAM lPar
 
 int32_t CON_STDCALL hook_BuildWindow()
 {
-	WindowData* wndData = (WindowData*)MAP_ADDRESS(0x134488);
+	auto* wndData = Mapper::mapAddress<WindowData*>(0x134488);
 
 	memset(&wndData->wndClass, 0, sizeof(wndData->wndClass));
 	wndData->wndClass.cbSize = 48;
@@ -168,7 +168,7 @@ int32_t CON_STDCALL hook_BuildWindow()
 bool WindowHooks::init()
 {
 	// Address definitions
-	const int32_t kBuildWindow = MAP_ADDRESS(0xA6B30);
+	const int32_t kBuildWindow = Mapper::mapAddress(0xA6B30);
 
 	// Init Hooks
 	Hook::createHook(kBuildWindow, &hook_BuildWindow);

@@ -1,0 +1,77 @@
+#include "Settings.hpp"
+#include "json.hpp"
+
+#include <fstream>
+#include <cstring>
+#include <print>
+#include <string_view>
+
+using json = nlohmann::json;
+
+namespace Settings
+{
+	constexpr std::string_view kSettingsFile = "settings.json";
+
+	bool save()
+	{
+		json j;
+
+		j["renderApi"] = static_cast<int32_t>(g_settings.renderApi);
+		j["gamePath"] = g_settings.gamePath;
+		j["width"] = g_settings.width;
+		j["height"] = g_settings.height;
+		j["fullscreen"] = g_settings.fullscreen;
+		j["use32BitColors"] = g_settings.use32BitColors;
+
+		std::ofstream file(kSettingsFile.data(), std::ios::out | std::ios::trunc);
+		if (! file.is_open())
+		{
+			std::println("[Settings]: failed to write settings file.");
+			return false;
+		}
+
+		file << j.dump(4);
+		file.close();
+
+		std::println("[Settings]: saved settings file.");
+
+		return true;
+	}
+
+	bool load()
+	{
+		std::ifstream file(kSettingsFile.data());
+
+		if (! file.is_open())
+		{
+			std::println("[Settings]: settings does not exist, creating...");
+			return save();
+		}
+
+		json j;
+		file >> j;
+		file.close();
+
+		if (j.contains("renderApi"))
+			g_settings.renderApi = static_cast<RenderAPI>(j["renderApi"].get<int32_t>());
+
+		if (j.contains("gamePath"))
+			std::strncpy(g_settings.gamePath, j["gamePath"].get<std::string>().c_str(), sizeof(g_settings.gamePath) - 1);
+
+		if (j.contains("width"))
+			g_settings.width = j["width"].get<int32_t>();
+
+		if (j.contains("height"))
+			g_settings.height = j["height"].get<int32_t>();
+
+		if (j.contains("fullscreen"))
+			g_settings.fullscreen = j["fullscreen"].get<bool>();
+
+		if (j.contains("use32BitColors"))
+			g_settings.use32BitColors = j["use32BitColors"].get<bool>();
+
+		std::println("[Settings]: loaded settings file.");
+
+		return true;
+	}
+}

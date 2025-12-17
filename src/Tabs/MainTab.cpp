@@ -1,5 +1,6 @@
 #include "MainTab.hpp"
 #include "Settings.hpp"
+#include "Utils.hpp"
 
 // Hooks
 #include "RenderAPI/DirectX6.hpp"
@@ -28,23 +29,12 @@
 		Various map fixes (Al's toy barn)
 */
 
-void MainTab::init()
-{
-	// Main tab init
-	std::ifstream file("game_path.txt");
-
-	if (file)
-	{
-		std::getline(file, m_gamePath);
-		// should be populated from settings file
-		std::strncpy(g_settings.gamePath, m_gamePath.c_str(), sizeof(g_settings.gamePath));
-	}
-}
+void MainTab::init() {}
 
 void MainTab::render()
 {
 	// Game Patches
-	ImGui::SeparatorText("Game Patches");
+	ImGui::SeparatorText("Game Patches (DON'T WORK)");
 
 	static bool placeholder = false;
 	ImGui::BeginTable("patch_table", 3, ImGuiTableFlags_SizingStretchSame);
@@ -72,7 +62,7 @@ void MainTab::render()
 	ImGui::SeparatorText("Launch Settings");
 
 	ImGui::PushItemWidth(-1);
-	ImGui::InputText("##game_path", m_gamePath.data(), m_gamePath.length(), ImGuiInputTextFlags_ReadOnly);
+	ImGui::InputText("##game_path", g_settings.gamePath, sizeof(g_settings.gamePath), ImGuiInputTextFlags_ReadOnly);
 	ImGui::PopItemWidth();
 
 	ImGui::BeginTable("launch_options", 2, ImGuiTableFlags_SizingStretchProp);
@@ -92,21 +82,29 @@ void MainTab::render()
 
 	ImGui::Spacing();
 
-	ImGui::Button("Change Path", { ImGui::GetContentRegionAvail().x, 30 });
-
-	if (ImGui::Button("Map Game", { ImGui::GetContentRegionAvail().x, 30 }))
+	if (ImGui::Button("Change Path", { ImGui::GetContentRegionAvail().x, 30 }))
 	{
-		std::println("Mapping!");
-		m_mapper.map(m_gamePath);
+		std::string selectedPath;
+
+		if (Utils::selectFile(selectedPath))
+		{
+			std::strncpy(g_settings.gamePath, selectedPath.c_str(), sizeof(g_settings.gamePath) - 1);
+			std::println("[MainTab]: Setting new game path to - {}", selectedPath);
+
+			Settings::save();
+		}
 	}
 
+	if (ImGui::Button("Map Game", { ImGui::GetContentRegionAvail().x, 30 }))
+		mapGame();
+
 	if (ImGui::Button("Launch Game", { ImGui::GetContentRegionAvail().x, 30 }))
-		launchGame();
+		m_mapper.runGame();
 }
 
-void MainTab::launchGame()
+void MainTab::mapGame()
 {
-	std::println("Launch Game!");
+	m_mapper.map(g_settings.gamePath);
 
 	std::vector<Hook::SharedPtr> hooks = {
 		std::make_shared<CommonHooks>(),
@@ -134,14 +132,11 @@ void MainTab::launchGame()
 		bool result = hook->init();
 
 		if (result)
-			std::println("Initalised [{}] hook", hook->getName());
+			std::println("[MainTab]: Initalised [{}] hook", hook->getName());
 		else
-			std::println("Failed to initialise [{}] hook", hook->getName());
+			std::println("[MainTab]: Failed to initialise [{}] hook", hook->getName());
 	}
 
 	if (MH_EnableHook(MH_ALL_HOOKS))
-		std::println("[Renderer]: Could not enable all hooks.");
-
-	// start the game
-	m_mapper.runMap();
+		std::println("[MainTab]: Could not enable all hooks.");
 }

@@ -57,6 +57,7 @@ set(LOADER_SOURCES
     src/Tabs/DebugTab.cpp
     src/Tabs/DebugTab.hpp
 
+    src/Settings.cpp
     src/Settings.hpp
 
     src/RenderAPI/DirectX6.cpp

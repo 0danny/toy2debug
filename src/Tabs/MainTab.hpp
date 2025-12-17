@@ -13,9 +13,8 @@ public:
 	void render() override;
 
 private:
-	void launchGame();
+	void mapGame();
 
 private:
-	std::string m_gamePath;
 	Mapper m_mapper;
 };

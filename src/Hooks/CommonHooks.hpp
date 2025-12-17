@@ -16,33 +16,25 @@ public:
 private:
 	static void CON_STDCALL hook_ReadRegistry()
 	{
-		std::println("Reading registry!");
-
 		std::filesystem::path fsPath = g_settings.gamePath;
 
 		std::string basePath = fsPath.parent_path().string();
 		std::string dataPath = (fsPath.parent_path() / "data//").string();
 
-		char* cdPathDst = reinterpret_cast<char*>(MAP_ADDRESS(0x483144));
-		char* dataPathDst = reinterpret_cast<char*>(MAP_ADDRESS(0x482F40));
+		auto* cdPathDst = Mapper::mapAddress<char*>(0x483144);
+		auto* dataPathDst = Mapper::mapAddress<char*>(0x482F40);
 
 		strcpy(cdPathDst, basePath.c_str());
 		strcpy(dataPathDst, dataPath.c_str());
 
-		*(int32_t*)MAP_ADDRESS(0x482F3C) = 1; // g_registryKeysRead
-		*(int32_t*)MAP_ADDRESS(0x484484) = 0; // g_isSoftwareRendering
-	}
-
-	static void CON_STDCALL hook_ProfileCPU()
-	{
-		// no-op
-		return;
+		*Mapper::mapAddress<int32_t*>(0x482F3C) = 1; // g_registryKeysRead
+		*Mapper::mapAddress<int32_t*>(0x484484) = 0; // g_isSoftwareRendering
 	}
 
 	static int32_t CON_STDCALL hook_BuildProfileMachine()
 	{
 		// g_renderMode = D3DRenderer
-		*(int32_t*)MAP_ADDRESS(0x134554) = 2;
+		*Mapper::mapAddress<int32_t*>(0x134554) = 2;
 
 		// useless now that we hook all window/driver code
 		return TRUE;
@@ -67,7 +59,7 @@ private:
 			.text:20012E5D                 jge     short loc_20012E57
 		*/
 
-		uint8_t* p = (uint8_t*)MAP_ADDRESS(0x12E49);
+		auto* p = Mapper::mapAddress<uint8_t*>(0x12E49);
 
 		for (int32_t byte = 0; byte < 22; byte++)
 			p[byte] = 0x90;
@@ -76,13 +68,11 @@ private:
 	bool init() override
 	{
 		// Address definitions
-		const int32_t kReadRegistry = MAP_ADDRESS(0xA6390);
-		const int32_t kProfileCPU = MAP_ADDRESS(0x7EF80);
-		const int32_t kBuildProfileMachine = MAP_ADDRESS(0x93A0);
+		const int32_t kReadRegistry = Mapper::mapAddress(0xA6390);
+		const int32_t kBuildProfileMachine = Mapper::mapAddress(0x93A0);
 
 		// Init Hooks
 		Hook::createHook(kReadRegistry, &hook_ReadRegistry);
-		Hook::createHook(kProfileCPU, &hook_ProfileCPU);
 		Hook::createHook(kBuildProfileMachine, &hook_BuildProfileMachine);
 
 		patchCursorHiding();
