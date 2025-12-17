@@ -8,7 +8,7 @@ namespace DX6
 {
 	static CD3DFramework g_framework {};
 
-	bool DeviceHooks::initialize(HWND hWnd, bool fullscreen, int32_t width, int32_t height, GUID* ddGuid, const IID& deviceGuid)
+	bool DeviceHooks::initialize(HWND hWnd, bool fullscreen, int32_t width, int32_t height)
 	{
 		g_framework.hWnd = hWnd;
 		g_framework.bIsFullscreen = fullscreen ? 1 : 0;
@@ -16,7 +16,7 @@ namespace DX6
 		g_framework.dwRenderHeight = height;
 
 		// Create DirectDraw
-		bool result = createDirectDrawInterface(ddGuid, fullscreen);
+		bool result = createDirectDrawInterface(fullscreen);
 		if (! result)
 		{
 			std::println("[DX6]: createDirectDrawInterface failed.");
@@ -32,7 +32,7 @@ namespace DX6
 		}
 
 		// Select device if specified
-		result = selectDevice(deviceGuid);
+		result = selectDevice();
 		if (! result)
 		{
 			std::println("[DX6]: selectDevice failed.");
@@ -56,7 +56,7 @@ namespace DX6
 		}
 
 		// Create device
-		result = createDevice(deviceGuid);
+		result = createDevice();
 		if (! result)
 		{
 			std::println("[DX6]: createDevice failed.");
@@ -87,13 +87,13 @@ namespace DX6
 		return result;
 	}
 
-	bool DeviceHooks::createDirectDrawInterface(GUID* ddGuid, bool fullscreen)
+	bool DeviceHooks::createDirectDrawInterface(bool fullscreen)
 	{
 		LPDIRECTDRAW pDD = nullptr;
 		HRESULT hr;
 
 		// Create DirectDraw
-		hr = DirectDrawCreate(ddGuid, &pDD, nullptr);
+		hr = DirectDrawCreate(nullptr, &pDD, nullptr);
 		if (FAILED(hr))
 			return false;
 
@@ -121,14 +121,14 @@ namespace DX6
 		return SUCCEEDED(hr);
 	}
 
-	bool DeviceHooks::selectDevice(const IID& deviceGuid)
+	bool DeviceHooks::selectDevice()
 	{
 		D3DFINDDEVICESEARCH search = { 0 };
 		D3DFINDDEVICERESULT result = { 0 };
 
 		search.dwSize = sizeof(D3DFINDDEVICESEARCH);
 		search.dwFlags = D3DFDS_GUID;
-		search.guid = deviceGuid;
+		search.guid = IID_IDirect3DHALDevice;
 
 		result.dwSize = sizeof(D3DFINDDEVICERESULT);
 
@@ -152,7 +152,7 @@ namespace DX6
 		memset(&g_framework.ddpfZBuffer, 0, sizeof(DDPIXELFORMAT));
 		g_framework.ddpfZBuffer.dwFlags = DDPF_ZBUFFER;
 
-		g_framework.pD3D->EnumZBufferFormats(deviceGuid, DeviceHooks::enumZBufferCallback, &g_framework.ddpfZBuffer);
+		g_framework.pD3D->EnumZBufferFormats(IID_IDirect3DHALDevice, DeviceHooks::enumZBufferCallback, &g_framework.ddpfZBuffer);
 
 		if (g_framework.ddpfZBuffer.dwSize != sizeof(DDPIXELFORMAT))
 			return false;
@@ -291,7 +291,7 @@ namespace DX6
 		return SUCCEEDED(hr);
 	}
 
-	bool DeviceHooks::createDevice(const IID& deviceGuid)
+	bool DeviceHooks::createDevice()
 	{
 		DDSURFACEDESC2 desc;
 		desc.dwSize = sizeof(DDSURFACEDESC2);
@@ -300,7 +300,7 @@ namespace DX6
 		if (desc.ddpfPixelFormat.dwRGBBitCount <= 8)
 			return false;
 
-		HRESULT hr = g_framework.pD3D->CreateDevice(deviceGuid, g_framework.pddsRenderTarget, &g_framework.pd3dDevice, nullptr);
+		HRESULT hr = g_framework.pD3D->CreateDevice(IID_IDirect3DHALDevice, g_framework.pddsRenderTarget, &g_framework.pd3dDevice, nullptr);
 
 		return SUCCEEDED(hr);
 	}
@@ -401,7 +401,7 @@ namespace DX6
 
 		*Mapper::mapAddress<CD3DFramework**>(0x484008) = &g_framework;
 
-		bool success = DeviceHooks::initialize(wndData->mainHwnd, g_settings.fullscreen, g_settings.width, g_settings.height, nullptr, IID_IDirect3DHALDevice);
+		bool success = DeviceHooks::initialize(wndData->mainHwnd, g_settings.fullscreen, g_settings.width, g_settings.height);
 
 		std::println("[ModeSelect]: Initialize returned {}", success ? "Success" : "Fail");
 

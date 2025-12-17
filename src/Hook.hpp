@@ -18,15 +18,26 @@ public:
 
 	virtual bool init() = 0;
 	std::string getName() const { return m_hookName; };
+	bool hasFailedHooks() { return m_failedHooks > 0; }
 
+public:
 	// Helper to build an actual minhook hook without the reinterpret casting
-	void createHook(int32_t address, void* detour, void** original = nullptr)
+	void createHook(int32_t address, void* detour)
 	{
-		// lets us know if any hooks failed
-		m_failedHooks += MH_CreateHook(reinterpret_cast<void*>(address), detour, original);
+		MH_STATUS status = MH_CreateHook(reinterpret_cast<void*>(address), detour, NULL);
+
+		if (status != MH_OK)
+			m_failedHooks++;
 	}
 
-	bool hasFailedHooks() { return m_failedHooks > 0; }
+	template <typename T>
+	void createHook(int32_t address, void* detour, T* original)
+	{
+		MH_STATUS status = MH_CreateHook(reinterpret_cast<void*>(address), detour, reinterpret_cast<void**>(original));
+
+		if (status != MH_OK)
+			m_failedHooks++;
+	}
 
 private:
 	std::string m_hookName;

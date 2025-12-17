@@ -7,6 +7,12 @@
 #include <print>
 #include <filesystem>
 
+namespace
+{
+	typedef FILE*(CON_CDECL* originalFOpen)(const char* fileName, const char* mode);
+	originalFOpen g_originalFOpen = nullptr;
+}
+
 class CommonHooks : public Hook
 {
 public:
@@ -18,7 +24,7 @@ private:
 	{
 		std::filesystem::path fsPath = g_settings.gamePath;
 
-		std::string basePath = fsPath.parent_path().string();
+		std::string basePath = fsPath.parent_path().string() + "//";
 		std::string dataPath = (fsPath.parent_path() / "data//").string();
 
 		auto* cdPathDst = Mapper::mapAddress<char*>(0x483144);
@@ -38,6 +44,25 @@ private:
 
 		// useless now that we hook all window/driver code
 		return TRUE;
+	}
+
+	static FILE* CON_CDECL hook_FOpen(const char* fileName, const char* mode)
+	{
+		// naturally the fopen will now look inside of the loader dir for saves
+		// instead of the game dir, this hook fixes that.
+
+		std::filesystem::path fsPath(fileName);
+		std::string redirectedPath;
+
+		if (fsPath.extension() == ".sav")
+		{
+			auto basePath = std::filesystem::path(g_settings.gamePath).parent_path() / fsPath.filename();
+
+			redirectedPath = basePath.string();
+			fileName = redirectedPath.c_str();
+		}
+
+		return g_originalFOpen(fileName, mode);
 	}
 
 	void patchCursorHiding()
@@ -70,10 +95,12 @@ private:
 		// Address definitions
 		const int32_t kReadRegistry = Mapper::mapAddress(0xA6390);
 		const int32_t kBuildProfileMachine = Mapper::mapAddress(0x93A0);
+		const int32_t kFOpen = Mapper::mapAddress(0xCF22C);
 
 		// Init Hooks
 		Hook::createHook(kReadRegistry, &hook_ReadRegistry);
 		Hook::createHook(kBuildProfileMachine, &hook_BuildProfileMachine);
+		Hook::createHook(kFOpen, &hook_FOpen, &g_originalFOpen);
 
 		patchCursorHiding();
 

@@ -15,15 +15,15 @@ namespace DX6
 
 		bool init() override;
 
-		static bool initialize(HWND hWnd, bool fullscreen, int32_t width, int32_t height, GUID* ddGuid, const IID& deviceGuid);
+		static bool initialize(HWND hWnd, bool fullscreen, int32_t width, int32_t height);
 
 	private:
-		static bool createDirectDrawInterface(GUID* ddGuid, bool fullscreen);
+		static bool createDirectDrawInterface(bool fullscreen);
 		static bool createD3DInterface();
-		static bool selectDevice(const IID& deviceGuid);
+		static bool selectDevice();
 		static bool createSurfaces(bool fullscreen, int32_t width, int32_t height);
 		static bool createZBuffer();
-		static bool createDevice(const IID& deviceGuid);
+		static bool createDevice();
 		static bool createViewport();
 		static void cleanup();
 		static void initSurfaceDesc(LPDDSURFACEDESC2 desc, uint32_t flags, uint32_t caps);
