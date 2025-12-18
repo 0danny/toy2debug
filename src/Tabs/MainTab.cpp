@@ -7,6 +7,7 @@
 #include "RenderAPI/DirectX9.hpp"
 #include "Hooks/CommonHooks.hpp"
 #include "Hooks/WindowHooks.hpp"
+#include "Hooks/GameVariables.hpp"
 
 #include <fstream>
 #include <print>
@@ -110,6 +111,8 @@ void MainTab::mapGame()
 		std::make_shared<CommonHooks>(),
 		std::make_shared<WindowHooks>(),
 	};
+
+	GameVariables::init();
 
 	switch (g_settings.renderApi)
 	{

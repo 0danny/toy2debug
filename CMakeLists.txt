@@ -97,6 +97,7 @@ set(LOADER_SOURCES
     # End DirectX9 Hooks
 
     src/Hooks/CommonHooks.hpp
+    src/Hooks/GameVariables.hpp
     src/Hooks/RendererCommon.hpp
 
     src/Hooks/WindowHooks.cpp
@@ -118,5 +119,5 @@ add_executable(loader WIN32
 )
 
 target_link_directories(loader PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/libs)
-target_link_libraries(loader PRIVATE d3d9 ddraw dxguid msimg32 MinHook.x32)
+target_link_libraries(loader PRIVATE d3d9 ddraw dxguid winmm MinHook.x32)
 target_compile_definitions(loader PRIVATE MH_STATIC)

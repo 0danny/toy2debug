@@ -14,13 +14,13 @@ public:
 
 	// Translation methods
 	template <typename T>
-	constexpr static T mapAddress(uint32_t address)
+	static T mapAddress(uint32_t address)
 	{
 		// can recast to any type easily
 		return reinterpret_cast<T>((uint32_t)g_newImageBase + address);
 	}
 
-	constexpr static uint32_t mapAddress(uint32_t address)
+	static uint32_t mapAddress(uint32_t address)
 	{
 		// straight conversion
 		return ((uint32_t)g_newImageBase + address);
