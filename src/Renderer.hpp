@@ -18,6 +18,7 @@ public:
 private:
 	bool createDeviceD3D();
 	void drawTabs();
+	void setTheme();
 
 	static LRESULT CALLBACK wndProc(HWND hWnd, uint32_t msg, WPARAM wParam, LPARAM lParam);
 

@@ -2,6 +2,7 @@
 
 #include "Hook.hpp"
 #include "ToyTypes.hpp"
+#include "Settings.hpp"
 
 #include <windows.h>
 
@@ -15,13 +16,13 @@ namespace DX6
 
 		bool init() override;
 
-		static bool initialize(HWND hWnd, bool fullscreen, int32_t width, int32_t height);
+		static bool initialize(HWND hWnd, Settings::WindowStyle windowStyle, int32_t width, int32_t height);
 
 	private:
-		static bool createDirectDrawInterface(bool fullscreen);
+		static bool createDirectDrawInterface(Settings::WindowStyle windowStyle);
 		static bool createD3DInterface();
 		static bool selectDevice();
-		static bool createSurfaces(bool fullscreen, int32_t width, int32_t height);
+		static bool createSurfaces(Settings::WindowStyle windowStyle, int32_t width, int32_t height);
 		static bool createZBuffer();
 		static bool createDevice();
 		static bool createViewport();

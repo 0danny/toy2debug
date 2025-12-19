@@ -9,30 +9,8 @@ LRESULT WINAPI windowWndProc(HWND hWnd, uint32_t msg, WPARAM wParam, LPARAM lPar
 {
 	switch (msg)
 	{
-		case WM_GETMINMAXINFO: {
-			// Prevent window from being resized in windowed mode
-			if (! g_settings.fullscreen)
-			{
-				MINMAXINFO* mmi = (MINMAXINFO*)lParam;
-				RECT windowRect = { 0, 0, g_settings.width, g_settings.height };
-
-				DWORD style = GetWindowLong(hWnd, GWL_STYLE);
-				DWORD exStyle = GetWindowLong(hWnd, GWL_EXSTYLE);
-				AdjustWindowRectEx(&windowRect, style, GetMenu(hWnd) != nullptr, exStyle);
-
-				int32_t windowWidth = windowRect.right - windowRect.left;
-				int32_t windowHeight = windowRect.bottom - windowRect.top;
-
-				mmi->ptMinTrackSize.x = windowWidth;
-				mmi->ptMinTrackSize.y = windowHeight;
-				mmi->ptMaxTrackSize.x = windowWidth;
-				mmi->ptMaxTrackSize.y = windowHeight;
-			}
-			return 0;
-		}
-
 		case WM_MOVE: {
-			if (! g_settings.fullscreen)
+			if (g_settings.windowStyle != Settings::WindowStyle::Fullscreen)
 			{
 				CD3DFramework* framework = *Mapper::mapAddress<CD3DFramework**>(0x484008);
 
@@ -61,11 +39,6 @@ LRESULT WINAPI windowWndProc(HWND hWnd, uint32_t msg, WPARAM wParam, LPARAM lPar
 			wndData->wndIsExiting = 1;
 			break;
 		}
-
-		case WM_NCPAINT:
-		case WM_NCACTIVATE:
-		case WM_MOVING:
-			break;
 	}
 
 	return DefWindowProcA(hWnd, msg, wParam, lParam);
@@ -107,20 +80,30 @@ int32_t CON_STDCALL hook_BuildWindow()
 	DWORD windowStyle;
 	DWORD exStyle;
 
-	if (g_settings.fullscreen)
+	bool isFullscreen = (g_settings.windowStyle == Settings::WindowStyle::Fullscreen);
+	bool isBorderless = (g_settings.windowStyle == Settings::WindowStyle::Borderless);
+
+	switch (g_settings.windowStyle)
 	{
-		windowStyle = WS_POPUP | WS_VISIBLE;
-		exStyle = WS_EX_TOPMOST;
-	}
-	else
-	{
-		windowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE;
-		exStyle = WS_EX_APPWINDOW;
+		case Settings::WindowStyle::Fullscreen:
+			windowStyle = WS_POPUP | WS_VISIBLE;
+			exStyle = WS_EX_TOPMOST;
+			break;
+
+		case Settings::WindowStyle::Windowed:
+			windowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE;
+			exStyle = WS_EX_APPWINDOW;
+			break;
+
+		case Settings::WindowStyle::Borderless:
+			windowStyle = WS_POPUP | WS_VISIBLE;
+			exStyle = WS_EX_APPWINDOW;
+			break;
 	}
 
 	RECT windowRect = { 0, 0, g_settings.width, g_settings.height };
 
-	if (! g_settings.fullscreen)
+	if (! isFullscreen && ! isBorderless)
 		AdjustWindowRectEx(&windowRect, windowStyle, FALSE, exStyle);
 
 	int32_t windowWidth = windowRect.right - windowRect.left;
@@ -129,8 +112,8 @@ int32_t CON_STDCALL hook_BuildWindow()
 	// Center window on screen
 	int32_t screenWidth = GetSystemMetrics(SM_CXSCREEN);
 	int32_t screenHeight = GetSystemMetrics(SM_CYSCREEN);
-	int32_t posX = g_settings.fullscreen ? 0 : (screenWidth - windowWidth) / 2;
-	int32_t posY = g_settings.fullscreen ? 0 : (screenHeight - windowHeight) / 2;
+	int32_t posX = (isFullscreen || isBorderless) ? 0 : (screenWidth - windowWidth) / 2;
+	int32_t posY = (isFullscreen || isBorderless) ? 0 : (screenHeight - windowHeight) / 2;
 
 	HWND window = CreateWindowExA(exStyle, kClassName, kClassName, windowStyle, posX, posY, windowWidth, windowHeight, 0, 0, wndData->hInstance, 0);
 

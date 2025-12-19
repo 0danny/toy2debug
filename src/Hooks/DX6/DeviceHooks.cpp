@@ -1,6 +1,5 @@
 #include "DeviceHooks.hpp"
 #include "Mapper.hpp"
-#include "Settings.hpp"
 
 #include <print>
 
@@ -8,15 +7,15 @@ namespace DX6
 {
 	static CD3DFramework g_framework {};
 
-	bool DeviceHooks::initialize(HWND hWnd, bool fullscreen, int32_t width, int32_t height)
+	bool DeviceHooks::initialize(HWND hWnd, Settings::WindowStyle windowStyle, int32_t width, int32_t height)
 	{
 		g_framework.hWnd = hWnd;
-		g_framework.bIsFullscreen = fullscreen ? 1 : 0;
+		g_framework.bIsFullscreen = (windowStyle == Settings::WindowStyle::Fullscreen) ? 1 : 0;
 		g_framework.dwRenderWidth = width;
 		g_framework.dwRenderHeight = height;
 
 		// Create DirectDraw
-		bool result = createDirectDrawInterface(fullscreen);
+		bool result = createDirectDrawInterface(windowStyle);
 		if (! result)
 		{
 			std::println("[DX6]: createDirectDrawInterface failed.");
@@ -40,7 +39,7 @@ namespace DX6
 		}
 
 		// Create surfaces
-		result = createSurfaces(fullscreen, width, height);
+		result = createSurfaces(windowStyle, width, height);
 		if (! result)
 		{
 			std::println("[DX6]: createSurfaces failed.");
@@ -87,7 +86,7 @@ namespace DX6
 		return result;
 	}
 
-	bool DeviceHooks::createDirectDrawInterface(bool fullscreen)
+	bool DeviceHooks::createDirectDrawInterface(Settings::WindowStyle windowStyle)
 	{
 		LPDIRECTDRAW pDD = nullptr;
 		HRESULT hr;
@@ -105,7 +104,8 @@ namespace DX6
 			return false;
 
 		// Set cooperative level
-		DWORD coopFlags = fullscreen ? (DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN | DDSCL_ALLOWREBOOT) : (DDSCL_NORMAL);
+		bool isFullscreen = (windowStyle == Settings::WindowStyle::Fullscreen);
+		DWORD coopFlags = isFullscreen ? (DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN | DDSCL_ALLOWREBOOT) : (DDSCL_NORMAL);
 
 		hr = g_framework.pDD->SetCooperativeLevel(g_framework.hWnd, coopFlags);
 
@@ -185,12 +185,12 @@ namespace DX6
 		return D3DENUMRET_OK;
 	}
 
-	bool DeviceHooks::createSurfaces(bool fullscreen, int32_t width, int32_t height)
+	bool DeviceHooks::createSurfaces(Settings::WindowStyle windowStyle, int32_t width, int32_t height)
 	{
 		DDSURFACEDESC2 desc;
 		HRESULT hr;
 
-		if (fullscreen)
+		if (windowStyle == Settings::WindowStyle::Fullscreen)
 		{
 			// Set display mode
 			hr = g_framework.pDD->SetDisplayMode(width, height, g_settings.use32BitColors ? 32 : 16, 0, 0);
@@ -401,7 +401,7 @@ namespace DX6
 
 		*Mapper::mapAddress<CD3DFramework**>(0x484008) = &g_framework;
 
-		bool success = DeviceHooks::initialize(wndData->mainHwnd, g_settings.fullscreen, g_settings.width, g_settings.height);
+		bool success = DeviceHooks::initialize(wndData->mainHwnd, g_settings.windowStyle, g_settings.width, g_settings.height);
 
 		std::println("[ModeSelect]: Initialize returned {}", success ? "Success" : "Fail");
 
