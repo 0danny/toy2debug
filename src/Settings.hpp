@@ -36,6 +36,14 @@ namespace Settings
 
 	bool save();
 	bool load();
+
+	struct StartupOptions
+	{
+		bool autoStart = false;
+		bool hidden = false;
+	};
+
+	StartupOptions parseArguments(int argc, const char* const* argv);
 }
 
 inline Settings::LoaderSettings g_settings = {};

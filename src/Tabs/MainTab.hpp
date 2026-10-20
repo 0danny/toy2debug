@@ -11,9 +11,10 @@ public:
 
 	void init() override;
 	void render() override;
+	bool launchGame();
 
 private:
-	void mapGame();
+	bool mapGame();
 
 private:
 	Mapper m_mapper;
