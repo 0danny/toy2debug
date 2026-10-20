@@ -26,7 +26,23 @@ private:
 		{
 			std::filesystem::path fsPath = g_settings.gamePath;
 
-			std::string basePath = fsPath.parent_path().string() + "//";
+			auto hasMedia = [](const std::filesystem::path& path) {
+				std::error_code error;
+				return std::filesystem::is_directory(path / "audio", error) && std::filesystem::is_directory(path / "rtlibs", error);
+			};
+			auto cdPath = fsPath.parent_path();
+			if (! hasMedia(cdPath))
+			{
+				char registryPath[512] {};
+				DWORD pathSize = sizeof(registryPath) - 2;
+				if (RegGetValueA(HKEY_LOCAL_MACHINE, "Software\\TravellersTalesToyStory2", "cdpath", RRF_RT_REG_SZ,
+						nullptr, registryPath, &pathSize) == ERROR_SUCCESS && registryPath[0] && hasMedia(registryPath))
+					cdPath = registryPath;
+				else if (hasMedia(cdPath / "CD"))
+					cdPath /= "CD";
+			}
+
+			std::string basePath = cdPath.string() + "//";
 			std::string dataPath = (fsPath.parent_path() / "data//").string();
 
 			strcpy(GameVariables::g_cdPath, basePath.c_str());
