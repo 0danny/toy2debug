@@ -6,15 +6,31 @@
 #include <windows.h>
 #include <shobjidl.h>
 #include <comdef.h>
+#include <io.h>
 
 namespace Utils
 {
-	inline void initConsole()
+	inline bool initConsole(bool create = true)
 	{
-		AllocConsole();
-		FILE* f;
+		static FILE* missingStreams[] = {
+			_fileno(stdout) < 0 ? stdout : nullptr,
+			_fileno(stderr) < 0 ? stderr : nullptr,
+		};
+		if (create)
+			AllocConsole();
+		else
+			AttachConsole(ATTACH_PARENT_PROCESS);
 
-		freopen_s(&f, "CONOUT$", "w", stdout);
+		// Preserve redirected output and give windowless launches a valid stream.
+		for (FILE* stream : missingStreams)
+		{
+			if (! stream)
+				continue;
+			FILE* output;
+			if (freopen_s(&output, GetConsoleWindow() ? "CONOUT$" : "NUL", "w", stream))
+				return false;
+		}
+		return true;
 	}
 
 	inline void setConsoleTitle(const std::string& title) { SetConsoleTitleA(title.data()); }

@@ -20,6 +20,31 @@ Expect bugs. The goal is to fix Toy Story 2 once and for all so it can be enjoye
 - Bypass registry key checks  
 - Custom resolution selection without the original broken menu  
 
+## Command line
+
+Options override `settings.json` in the working directory. Configuration is saved when launching the game or closing the UI. Repeated options use the last value. `--auto-start` launches without clicking the UI; `--hidden` suppresses the launcher UI and console and implies auto-start. These startup switches are not saved.
+
+```text
+loader.exe --hidden --game-path "C:\Games\Toy Story 2\toy2.exe" --width auto --height auto --window-style borderless --bypass-registry-keys true
+```
+
+| Option | Value |
+| --- | --- |
+| `--game-path` | Game executable path; resolved absolute path must fit in 255 bytes |
+| `--width`, `--height` | Positive integer or `auto` |
+| `--window-style` | `fullscreen`, `windowed`, or `borderless` |
+| `--use-32-bit-colors` | `true` or `false` |
+| `--correct-framerate` | `true` or `false` |
+| `--skip-copyright-esrb` | `true` or `false` |
+| `--disable-movies` | `true` or `false` |
+| `--widescreen-support` | `true` or `false` |
+| `--big-render-distance` | `true` or `false` |
+| `--bypass-registry-keys` | `true` or `false` |
+
+Width and height default to the primary monitor's current resolution in physical pixels unless overridden by saved settings or flags. `auto` explicitly detects each requested dimension at startup. The detected numbers are saved with the other settings.
+
+Use `--help` for usage. Invalid arguments exit with a nonzero status before creating launcher windows or starting the game. Relative paths resolve against the working directory. In Steam, set Start In to the game directory and put these arguments in Launch Options, without the executable name.
+
 ## Modern Window and Resolution Handling
 
 The original resolution selection menu has been completely removed. The driver and window creation logic were rewritten from the ground up.

@@ -147,7 +147,7 @@ void Renderer::drawTabs()
 	ImGui::End();
 }
 
-void Renderer::run()
+bool Renderer::run(bool autoStart)
 {
 	MSG msg {};
 
@@ -178,7 +178,10 @@ void Renderer::run()
 		}
 
 		g_pd3dDevice->Present(NULL, NULL, NULL, NULL);
+		if (autoStart)
+			return MainTab().launchGame();
 	}
+	return true;
 }
 
 void Renderer::cleanup()

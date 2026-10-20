@@ -52,19 +52,25 @@ bool Mapper::map(const std::string& path)
 	}
 
 	if (! fixIAT(g_newImageBase))
+	{
 		std::println("[Mapper]: Failed to fix IAT entries.");
-	else
-		std::println("[Mapper]: Fixed IAT entries.");
+		return false;
+	}
+	std::println("[Mapper]: Fixed IAT entries.");
 
 	if (! applyReloc((uint32_t)g_newImageBase, imagePreferredBase, ntHeader->OptionalHeader.SizeOfImage))
+	{
 		std::println("[Mapper]: Failed to fix relocations.");
-	else
-		std::println("[Mapper]: Fixed relocations.");
+		return false;
+	}
+	std::println("[Mapper]: Fixed relocations.");
 
 	if (! setupVectorExceptions())
+	{
 		std::println("[Mapper]: Failed to setup vectored exception handler.");
-	else
-		std::println("[Mapper]: Installed vectored exception handler.");
+		return false;
+	}
+	std::println("[Mapper]: Installed vectored exception handler.");
 
 	std::println("[Mapper]: Module Path -> {}.", path);
 
@@ -88,6 +94,11 @@ uint8_t* Mapper::mapFileToMemory(const std::string& fileName)
 
 	// get size
 	file = fopen(fileName.c_str(), "rb");
+	if (! file)
+	{
+		std::println("[Mapper]: Could not open {}.", fileName);
+		return nullptr;
+	}
 	fseek(file, 0, SEEK_END);
 	uint32_t fileLen = ftell(file);
 	rewind(file);

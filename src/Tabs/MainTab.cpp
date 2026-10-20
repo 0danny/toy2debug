@@ -168,21 +168,24 @@ void MainTab::render()
 	ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_CheckMark]);
 
 	if (ImGui::Button("Launch Game", { ImGui::GetContentRegionAvail().x, 30 }))
-	{
-		Settings::save();
-
-		if (! showMapButton)
-			mapGame();
-
-		m_mapper.runGame();
-	}
+		launchGame();
 
 	ImGui::PopStyleColor();
 }
 
-void MainTab::mapGame()
+bool MainTab::launchGame()
 {
-	m_mapper.map(g_settings.gamePath);
+	Settings::save();
+	if (! showMapButton && ! mapGame())
+		return false;
+	m_mapper.runGame();
+	return true;
+}
+
+bool MainTab::mapGame()
+{
+	if (! m_mapper.map(g_settings.gamePath))
+		return false;
 
 	std::vector<Hook::SharedPtr> hooks = {
 		std::make_shared<CommonHooks>(),
@@ -204,19 +207,23 @@ void MainTab::mapGame()
 	if (MH_Initialize())
 	{
 		std::println("[MainTab]: Could not init MinHook.");
-		return;
+		return false;
 	}
 
 	for (auto& hook : hooks)
 	{
-		bool result = hook->init();
-
-		if (result)
-			std::println("[MainTab]: Initalised [{}] hook", hook->getName());
-		else
+		if (! hook->init())
+		{
 			std::println("[MainTab]: Failed to initialise [{}] hook", hook->getName());
+			return false;
+		}
+		std::println("[MainTab]: Initalised [{}] hook", hook->getName());
 	}
 
 	if (MH_EnableHook(MH_ALL_HOOKS))
+	{
 		std::println("[MainTab]: Could not enable all hooks.");
+		return false;
+	}
+	return true;
 }

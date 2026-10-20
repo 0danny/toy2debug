@@ -12,7 +12,7 @@ public:
 	explicit Renderer(HINSTANCE hInstance);
 
 	int32_t init();
-	void run();
+	bool run(bool autoStart = false);
 	void cleanup();
 
 private:
